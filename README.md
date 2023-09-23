@@ -1,0 +1,2 @@
+# Mentat, an IRC bot
+This is just a learning exercise. I want to create a bot that records the activity of a list of channels and can store messages like an answering machine. Also, throw dice, tell jokes and stuff like that.
