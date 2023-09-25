@@ -8,16 +8,19 @@ import logging
 class Mentat(irc.bot.SingleServerIRCBot):
     def __init__(self, config: Config):
         self.config = config
-        self.server = self.config.irc_server
-        self.port = self.config.irc_port
-        self.nickname = self.config.irc_nick
-        self.realname = self.config.irc_realname
-        self.ident = self.config.irc_ident
-        self.password = self.config.irc_password
-        self.channels = self.config.irc_channels
+        # self.server = self.config.irc_server
+        # self.port = self.config.irc_port
+        # self.nickname = self.config.irc_nick
+        # self.realname = self.config.irc_realname
+        # self.ident = self.config.irc_ident
+        # self.password = self.config.irc_password
+        # self.channels = self.config.irc_channels
 
         irc.bot.SingleServerIRCBot.__init__(
-            self, [(self.server, self.port)], self.nickname, self.realname
+            self,
+            [(self.config.irc_server, self.config.irc_port)],
+            self.config.irc_nick,
+            self.config.irc_realname,
         )
 
     def on_nicknameinuse(self, c, e):
@@ -27,14 +30,14 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_welcome(self, c, e):
         logging.debug(f"Entering on_welcome function: c: {c}, e: {e}")
-        for channel in self.channels:
-            c.join(channel)
-            logging.info(f"Joining channel: {channel}")
+        # for channel in self.channels:
+        #     c.join(channel)
+        #     logging.info(f"Joining channel: {channel}")
 
     def on_endofmotd(self, c: ServerConnection, e):
         logging.debug(f"Entering on_endofmotd function: c: {c}, e: {e}")
         logging.info(f"End of MOTD received. Joining channels: {self.channels}")
-        for channel in self.channels:
+        for channel in self.config.irc_channels:
             logging.info(f"Joining channel: {channel}")
             c.join(channel)
             logging.debug(f"Joined channel: {channel}")

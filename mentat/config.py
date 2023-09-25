@@ -14,7 +14,7 @@ class Config(object):
     irc_realname = "Piter de Vries"
     irc_ident = "mentat"
     irc_password = ""
-    irc_channels = ["mentat", "malos"]
+    irc_channels = ["#mentat", "#malos"]
 
     def __init__(self, args: argparse.Namespace):
         logging.debug("Entering Config class")
@@ -54,3 +54,4 @@ class Config(object):
             self.irc_ident = db["IRC_IDENT"]
             self.irc_password = db["IRC_PASSWORD"]
             self.irc_channels = db["IRC_CHANNELS"]
+            logging.debug(f"Channels: {self.irc_channels}")
