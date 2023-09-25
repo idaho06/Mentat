@@ -23,10 +23,18 @@ class Mentat(irc.bot.SingleServerIRCBot):
             self.config.irc_realname,
         )
 
-    def on_nicknameinuse(self, c, e):
+    def on_nicknameinuse(self, c: ServerConnection, e):
         logging.debug(f"Entering on_nicknameinuse function: c: {c}, e: {e}")
-        c.nick(c.get_nickname() + "_")
-        logging.warning(f"Nickname in use. Changing to {c.get_nickname()}_")
+        # check if message contains f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {c.get_nickname()}:contraseña"
+        # if so, send password
+        if e.arguments[0].startswith(
+            f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {c.get_nickname()}:contraseña"
+        ):
+            logging.warning(f"Nickname registered. Sending password.")
+            c.nick(f"{c.get_nickname()}:{self.config.irc_password}")
+        else:
+            c.nick(c.get_nickname() + "_")
+            logging.warning(f"Nickname in use. Changing to {c.get_nickname()}_")
 
     def on_welcome(self, c, e):
         logging.debug(f"Entering on_welcome function: c: {c}, e: {e}")

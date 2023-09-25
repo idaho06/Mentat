@@ -10,7 +10,7 @@ class Config(object):
     # IRC settings
     irc_server = "proxy-irc.chathispano.com"
     irc_port = 6667
-    irc_nick = "Mentat_"
+    irc_nick = "Mentat"
     irc_realname = "Piter de Vries"
     irc_ident = "mentat"
     irc_password = ""
@@ -27,6 +27,13 @@ class Config(object):
         # checks if logdir exists, if not, creates it
         if not os.path.exists(self.logdir):
             os.makedirs(self.logdir)
+        # if argument --reset is used, deletes configfile
+        if args.reset:
+            os.remove(self.configfile)
+            logging.info("Configuration file deleted.")
+        # if argument --password is used, sets irc_password
+        if args.password:
+            self.irc_password = args.password
         # checks if configfile exists, if not, creates it
         if not os.path.exists(self.configfile):
             self.create_configfile(self.configfile)
@@ -54,4 +61,3 @@ class Config(object):
             self.irc_ident = db["IRC_IDENT"]
             self.irc_password = db["IRC_PASSWORD"]
             self.irc_channels = db["IRC_CHANNELS"]
-            logging.debug(f"Channels: {self.irc_channels}")

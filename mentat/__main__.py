@@ -25,6 +25,12 @@ parser = argparse.ArgumentParser(
 # parser.add_argument("echo", help="echo the string you use here")
 # parser.add_argument("-db", "--database", help="Database to be used.", default="/tmp/termgame.sqlite3")
 parser.add_argument(
+    "-p", "--password", help="Password for the nick of the bot.", default=""
+)
+parser.add_argument(
+    "--reset", help="Reset the configuration file.", action="store_true"
+)
+parser.add_argument(
     "-d",
     "--debug",
     help="Debug level: DEBUG, INFO, WARNING, ERROR or CRITICAL",
