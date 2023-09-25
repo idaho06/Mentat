@@ -81,9 +81,36 @@ class Mentat(irc.bot.SingleServerIRCBot):
                 return
             self.dcc_connect(address, port)
 
-    def do_command(self, e, cmd):
+    def do_command(self, e, cmd: str):
         logging.debug(f"Entering do_command function: e: {e}, cmd: {cmd}")
         nick = e.source.nick
+        talk_to = None
+        if e.type == "privmsg":
+            talk_to = nick
+        else:
+            talk_to = e.target
+
         c = self.connection
-        c.privmsg(nick, "I was told to " + cmd)
+
+        cmd_list = cmd.split()
+
+        # c.privmsg(nick, "I was told to " + cmd)
+        if cmd_list[0].lower() == "hola":
+            logging.debug(f"Command: hola")
+            c.privmsg(talk_to, "Hola, " + nick)
+            # c.notice(talk_to, "Hola, " + nick)
+        elif cmd_list[0].lower() == "op":
+            logging.debug(f"Command: op")
+            if len(cmd_list) > 1 and len(cmd_list) < 4:
+                nick_to_op = cmd_list[1]
+                channel = ""
+                try:
+                    channel = cmd_list[2]
+                except IndexError:
+                    channel = talk_to
+                logging.debug(f"Channel: {channel}, Nick to op: {nick_to_op}")
+                c.mode(channel, f"+o {nick_to_op}")
+            elif len(cmd_list) == 1 and e.type != "privmsg":
+                c.mode(talk_to, f"+o {nick}")
+
         return
