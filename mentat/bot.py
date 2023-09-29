@@ -2,12 +2,14 @@ import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ip_quad_to_numstr, ServerConnection
 from mentat.config import Config
+from mentat.logger import *
 import logging
 
 
 class Mentat(irc.bot.SingleServerIRCBot):
     def __init__(self, config: Config):
         self.config = config
+        self.logger = Logger(self.config)
         # self.server = self.config.irc_server
         # self.port = self.config.irc_port
         # self.nickname = self.config.irc_nick
@@ -52,6 +54,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_pubmsg(self, c, e):
         logging.debug(f"Entering on_pubmsg function: c: {c}, e: {e}")
+        self.logger.pubmsg(e)
         a = e.arguments[0].split(":", 1)
         if len(a) > 1 and irc.strings.lower(a[0]) == irc.strings.lower(
             self.connection.get_nickname()

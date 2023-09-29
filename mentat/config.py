@@ -28,7 +28,7 @@ class Config(object):
         if not os.path.exists(self.logdir):
             os.makedirs(self.logdir)
         # if argument --reset is used, deletes configfile
-        if args.reset:
+        if args.reset and os.path.exists(self.configfile):
             os.remove(self.configfile)
             logging.info("Configuration file deleted.")
         # if argument --password is used, sets irc_password
