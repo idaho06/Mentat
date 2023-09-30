@@ -20,6 +20,8 @@ class Config(object):
         logging.debug("Entering Config class")
         self.configdir = user_config_dir("mentat")
         self.logdir = user_log_dir("mentat")
+        if args.logdir:
+            self.logdir = args.logdir
         self.configfile = f"{self.configdir}/mentat.conf"
         # checks if configdir exists, if not, creates it
         if not os.path.exists(self.configdir):
@@ -36,6 +38,7 @@ class Config(object):
             self.irc_password = args.password
         # checks if configfile exists, if not, creates it
         if not os.path.exists(self.configfile):
+            # open(self.configfile, "a").close()
             self.create_configfile(self.configfile)
         else:
             self.load_configfile(self.configfile)
@@ -50,6 +53,7 @@ class Config(object):
             db["IRC_IDENT"] = self.irc_ident
             db["IRC_PASSWORD"] = self.irc_password
             db["IRC_CHANNELS"] = self.irc_channels
+            db["LOGDIR"] = self.logdir
 
     def load_configfile(self, configfile: str):
         logging.debug(f"Entering load_configfile function. Configfile: {configfile}")
@@ -61,3 +65,4 @@ class Config(object):
             self.irc_ident = db["IRC_IDENT"]
             self.irc_password = db["IRC_PASSWORD"]
             self.irc_channels = db["IRC_CHANNELS"]
+            self.logdir = db["LOGDIR"]

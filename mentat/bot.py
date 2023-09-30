@@ -64,6 +64,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_privmsg(self, c, e):
         logging.debug(f"Entering on_privmsg function: c: {c}, e: {e}")
+        self.logger.privmsg(e)
         self.do_command(e, e.arguments[0])
         return
 

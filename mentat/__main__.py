@@ -28,6 +28,9 @@ parser.add_argument(
     "-p", "--password", help="Password for the nick of the bot.", default=""
 )
 parser.add_argument(
+    "-l", "--logdir", help="Path for the channel and private logs.", default=""
+)
+parser.add_argument(
     "--reset", help="Reset the configuration file.", action="store_true"
 )
 parser.add_argument(

@@ -1,5 +1,6 @@
 import logging
 from mentat.config import Config
+from datetime import datetime
 
 
 class Logger(object):
@@ -12,7 +13,18 @@ class Logger(object):
         logging.info(
             f"Channel: {e.target} | User: {e.source.nick} | Message: {e.arguments[0]}"
         )
+        channel = e.target
+        channel = channel.replace("#", "channel_")
+        filename = f"{self.config.logdir}/{channel}.log"
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(filename, "a") as f:
+            f.write(f"{time} <{e.source.nick}> {e.arguments[0]}\n")
 
     def privmsg(self, e):
         logging.debug(f"Entering privmsg function: e: {e}")
         logging.info(f"User: {e.source.nick} | Message: {e.arguments[0]}")
+        nick = e.source.nick
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        filename = f"{self.config.logdir}/nick_{nick}.log"
+        with open(filename, "a") as f:
+            f.write(f"{time} {e.arguments[0]}\n")
