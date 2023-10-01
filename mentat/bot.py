@@ -15,13 +15,6 @@ class Mentat(irc.bot.SingleServerIRCBot):
         """Constructor for the bot."""
         self.config = config
         self.logger = Logger(self.config)
-        # self.server = self.config.irc_server
-        # self.port = self.config.irc_port
-        # self.nickname = self.config.irc_nick
-        # self.realname = self.config.irc_realname
-        # self.ident = self.config.irc_ident
-        # self.password = self.config.irc_password
-        # self.channels = self.config.irc_channels
 
         irc.bot.SingleServerIRCBot.__init__(
             self,
