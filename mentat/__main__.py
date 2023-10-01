@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Main module for Mentat. This module gets the arguments from the command line,
+configures the logging and starts the bot."""
+
+import sys
 import logging
 import argparse
 from mentat.config import Config
@@ -8,9 +12,10 @@ from mentat.bot import Mentat
 
 
 def main(args: argparse.Namespace):
+    """Main function for Mentat."""
     logging.debug("Entering Main function")
     logging.info("This is Mentat, an IRC bot.")
-    logging.debug(f"Args: {args}")
+    logging.debug("Args: %s", args)
     config = Config(args)
     mentat = Mentat(config)
     mentat.start()
@@ -23,7 +28,8 @@ parser = argparse.ArgumentParser(
     epilog="Made by César (Idaho06) Rodríguez Moreno.",
 )
 # parser.add_argument("echo", help="echo the string you use here")
-# parser.add_argument("-db", "--database", help="Database to be used.", default="/tmp/termgame.sqlite3")
+# parser.add_argument("-db", "--database",
+#                     help="Database to be used.", default="/tmp/termgame.sqlite3")
 parser.add_argument(
     "-p", "--password", help="Password for the nick of the bot.", default=""
 )
@@ -46,35 +52,35 @@ parser.add_argument(
     default="stderr",
 )
 
-args = parser.parse_args()
+main_args = parser.parse_args()
 
 
-loglevel = logging.WARNING
-logoutput = None
+LOG_LEVEL = logging.WARNING
+LOG_OUTPUT = None
 
 
-if args.debug == "DEBUG":
-    loglevel = logging.DEBUG
-if args.debug == "INFO":
-    loglevel = logging.INFO
-if args.debug == "ERROR":
-    loglevel = logging.ERROR
-if args.debug == "CRITICAL":
-    loglevel = logging.CRITICAL
+if main_args.debug == "DEBUG":
+    LOG_LEVEL = logging.DEBUG
+if main_args.debug == "INFO":
+    LOG_LEVEL = logging.INFO
+if main_args.debug == "ERROR":
+    LOG_LEVEL = logging.ERROR
+if main_args.debug == "CRITICAL":
+    LOG_LEVEL = logging.CRITICAL
 
 
-if args.erroroutput != "stderr":
-    logoutput = args.erroroutput
+if main_args.erroroutput != "stderr":
+    LOG_OUTPUT = main_args.erroroutput
 
 logging.basicConfig(
-    level=loglevel,
-    filename=logoutput,
+    level=LOG_LEVEL,
+    filename=LOG_OUTPUT,
     format="%(asctime)s %(levelname)s: %(funcName)s: %(message)s",
 )
 
-logging.info(f"Logging level set to {logging.getLevelName(loglevel)}.")
+logging.info("Logging level set to %s", logging.getLevelName(LOG_LEVEL))
 
 # logging.info("Configuring database to %s" % args.database)
 
 
-exit(main(args))
+sys.exit(main(main_args))
