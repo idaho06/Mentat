@@ -11,7 +11,7 @@ from mentat.config import Config
 from mentat.bot import Mentat
 
 
-def main(args: argparse.Namespace):
+def main(args: argparse.Namespace) -> int:
     """Main function for Mentat."""
     logging.debug("Entering Main function")
     logging.info("This is Mentat, an IRC bot.")
