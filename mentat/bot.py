@@ -1,13 +1,18 @@
+"""Bot module for Mentat. This module contains the class for the bot."""
+
+import logging
 import irc.bot
 import irc.strings
-from irc.client import ip_numstr_to_quad, ip_quad_to_numstr, ServerConnection
+from irc.client import ip_numstr_to_quad, ServerConnection
 from mentat.config import Config
-from mentat.logger import *
-import logging
+from mentat.logger import Logger
 
 
 class Mentat(irc.bot.SingleServerIRCBot):
+    """Class for the bot."""
+
     def __init__(self, config: Config):
+        """Constructor for the bot."""
         self.config = config
         self.logger = Logger(self.config)
         # self.server = self.config.irc_server
@@ -25,58 +30,65 @@ class Mentat(irc.bot.SingleServerIRCBot):
             self.config.irc_realname,
         )
 
-    def on_nicknameinuse(self, c: ServerConnection, e):
-        logging.debug(f"Entering on_nicknameinuse function: c: {c}, e: {e}")
-        # check if message contains f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {c.get_nickname()}:contraseña"
-        # if so, send password
-        if e.arguments[0].startswith(
-            f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {c.get_nickname()}:contraseña"
+    def on_nicknameinuse(self, connection: ServerConnection, event):
+        """Function to handle the nickname in use error."""
+        logging.debug(
+            "Entering on_nicknameinuse function: c: %s, e: %s", connection, event
+        )
+        if event.arguments[0].startswith(
+            f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {connection.get_nickname()}:contraseña"
         ):
-            logging.warning(f"Nickname registered. Sending password.")
-            c.nick(f"{c.get_nickname()}:{self.config.irc_password}")
+            logging.warning("Nickname registered. Sending password.")
+            connection.nick(f"{connection.get_nickname()}:{self.config.irc_password}")
         else:
-            c.nick(c.get_nickname() + "_")
-            logging.warning(f"Nickname in use. Changing to {c.get_nickname()}_")
+            connection.nick(connection.get_nickname() + "_")
+            logging.warning(
+                "Nickname in use. Changing to %s_", connection.get_nickname()
+            )
 
-    def on_welcome(self, c, e):
-        logging.debug(f"Entering on_welcome function: c: {c}, e: {e}")
+    def on_welcome(self, connection: ServerConnection, event):
+        """Function to handle the welcome message."""
+        logging.debug("Entering on_welcome function: c: %s, e: %s", connection, event)
         # for channel in self.channels:
         #     c.join(channel)
         #     logging.info(f"Joining channel: {channel}")
 
-    def on_endofmotd(self, c: ServerConnection, e):
-        logging.debug(f"Entering on_endofmotd function: c: {c}, e: {e}")
-        logging.info(f"End of MOTD received. Joining channels: {self.channels}")
+    def on_endofmotd(self, connection: ServerConnection, event):
+        """Function to handle the end of MOTD."""
+        logging.debug("Entering on_endofmotd function: c: %s, e: %s", connection, event)
+        logging.info("End of MOTD received. Joining channels: %s", self.channels)
         for channel in self.config.irc_channels:
-            logging.info(f"Joining channel: {channel}")
-            c.join(channel)
-            logging.debug(f"Joined channel: {channel}")
+            logging.info("Joining channel: %s", channel)
+            connection.join(channel)
+            logging.debug("Joined channel: %s", channel)
 
-    def on_pubmsg(self, c, e):
-        logging.debug(f"Entering on_pubmsg function: c: {c}, e: {e}")
-        self.logger.pubmsg(e)
-        a = e.arguments[0].split(":", 1)
-        if len(a) > 1 and irc.strings.lower(a[0]) == irc.strings.lower(
+    def on_pubmsg(self, connection: ServerConnection, event):
+        """Function to handle public messages."""
+        logging.debug("Entering on_pubmsg function: c: %s, e: %s", connection, event)
+        self.logger.pubmsg(event)
+        subject = event.arguments[0].split(":", 1)
+        if len(subject) > 1 and irc.strings.lower(subject[0]) == irc.strings.lower(
             self.connection.get_nickname()
         ):
-            self.do_command(e, a[1].strip())
-        return
+            self.do_command(event, subject[1].strip())
 
-    def on_privmsg(self, c, e):
-        logging.debug(f"Entering on_privmsg function: c: {c}, e: {e}")
-        self.logger.privmsg(e)
-        self.do_command(e, e.arguments[0])
-        return
+    def on_privmsg(self, connection: ServerConnection, event):
+        """Function to handle private messages."""
+        logging.debug("Entering on_privmsg function: c: %s, e: %s", connection, event)
+        self.logger.privmsg(event)
+        self.do_command(event, event.arguments[0])
 
-    def on_dccmsg(self, c, e):
+    def on_dccmsg(self, connection: ServerConnection, event):
+        """Function to handle DCC messages."""
         # non-chat DCC messages are raw bytes; decode as text
-        text = e.arguments[0].decode("utf-8")
-        c.privmsg("You said: " + text)
+        text = event.arguments[0].decode("utf-8")
+        connection.privmsg(event.source.nick, "You said: " + text)
 
-    def on_dccchat(self, c, e):
-        if len(e.arguments) != 2:
+    def on_dccchat(self, connection: ServerConnection, event):
+        """Function to handle DCC chat requests."""
+        if len(event.arguments) != 2:
             return
-        args = e.arguments[1].split()
+        args = event.arguments[1].split()
         if len(args) == 4:
             try:
                 address = ip_numstr_to_quad(args[2])
@@ -85,26 +97,27 @@ class Mentat(irc.bot.SingleServerIRCBot):
                 return
             self.dcc_connect(address, port)
 
-    def do_command(self, e, cmd: str):
-        logging.debug(f"Entering do_command function: e: {e}, cmd: {cmd}")
-        nick = e.source.nick
+    def do_command(self, event, cmd: str):
+        """Function to handle commands."""
+        logging.debug("Entering do_command function: e: %s, cmd: %s", event, cmd)
+        nick = event.source.nick
         talk_to = None
-        if e.type == "privmsg":
+        if event.type == "privmsg":
             talk_to = nick
         else:
-            talk_to = e.target
+            talk_to = event.target
 
-        c = self.connection
+        connection = self.connection
 
         cmd_list = cmd.split()
 
         # c.privmsg(nick, "I was told to " + cmd)
         if cmd_list[0].lower() == "hola":
-            logging.debug(f"Command: hola")
-            c.privmsg(talk_to, "Hola, " + nick)
+            logging.debug("Command: hola")
+            connection.privmsg(talk_to, "Hola, " + nick)
             # c.notice(talk_to, "Hola, " + nick)
         elif cmd_list[0].lower() == "op":
-            logging.debug(f"Command: op")
+            logging.debug("Command: op")
             if len(cmd_list) > 1 and len(cmd_list) < 4:
                 nick_to_op = cmd_list[1]
                 channel = ""
@@ -112,9 +125,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
                     channel = cmd_list[2]
                 except IndexError:
                     channel = talk_to
-                logging.debug(f"Channel: {channel}, Nick to op: {nick_to_op}")
-                c.mode(channel, f"+o {nick_to_op}")
-            elif len(cmd_list) == 1 and e.type != "privmsg":
-                c.mode(talk_to, f"+o {nick}")
-
-        return
+                logging.debug("Channel: %s, Nick to op: %s", channel, nick_to_op)
+                connection.mode(channel, f"+o {nick_to_op}")
+            elif len(cmd_list) == 1 and event.type != "privmsg":
+                connection.mode(talk_to, f"+o {nick}")
