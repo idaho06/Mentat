@@ -17,9 +17,9 @@ def main(args: argparse.Namespace) -> int:
     logging.info("This is Mentat, an IRC bot.")
     logging.debug("Args: %s", args)
     config = Config(args)
+    mentat = Mentat(config)
     if args.create_config_and_exit:
         return 0
-    mentat = Mentat(config)
     mentat.start()
 
     return 0

@@ -6,6 +6,7 @@ import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
 from mentat.config import Config
 from mentat.logger import Logger
+from mentat.status import Status
 
 
 class Mentat(irc.bot.SingleServerIRCBot):
@@ -15,6 +16,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         """Constructor for the bot."""
         self.config = config
         self.logger = Logger(self.config)
+        self.status = Status()  # first status is INIT
 
         irc.bot.SingleServerIRCBot.__init__(
             self,
@@ -23,25 +25,40 @@ class Mentat(irc.bot.SingleServerIRCBot):
             self.config.irc_realname,
         )
 
+    def start(self):
+        """Starts the bot."""
+        logging.debug("Entering start function")
+        logging.info("Starting bot.")
+        self.status.transition("connect")
+        irc.bot.SingleServerIRCBot.start(self)
+
     def on_nicknameinuse(self, connection: ServerConnection, event):
         """Function to handle the nickname in use error."""
         logging.debug(
             "Entering on_nicknameinuse function: c: %s, e: %s", connection, event
         )
-        if event.arguments[0].startswith(
-            f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {connection.get_nickname()}:contraseña"
+        if (
+            event.arguments[0].startswith(
+                f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {connection.get_nickname()}:contraseña"
+            )
+            and self.status.get_status() != Status.CONNECTING_AUTHENTICATING
         ):
             logging.warning("Nickname registered. Sending password.")
+            self.status.transition(
+                "authenticate"
+            )  # change status to Status.CONNECTING_AUTHENTICATING
             connection.nick(f"{connection.get_nickname()}:{self.config.irc_password}")
         else:
-            connection.nick(connection.get_nickname() + "_")
-            logging.warning(
-                "Nickname in use. Changing to %s_", connection.get_nickname()
+            logging.error(
+                "Nickname in use or wrong password. Changing to %s_",
+                connection.get_nickname(),
             )
+            connection.nick(connection.get_nickname() + "_")
 
     def on_welcome(self, connection: ServerConnection, event):
         """Function to handle the welcome message."""
         logging.debug("Entering on_welcome function: c: %s, e: %s", connection, event)
+        self.status.transition("connected")  # change status to Status.CONNECTED
         # for channel in self.channels:
         #     c.join(channel)
         #     logging.info(f"Joining channel: {channel}")
