@@ -4,6 +4,8 @@ import logging
 from mentat.config import Config
 from datetime import datetime
 
+# import irc.strings
+
 
 class Logger(object):
     """Class for logging messages to files."""
@@ -26,7 +28,7 @@ class Logger(object):
         channel = channel.replace("#", "channel_")
         filename = f"{self.config.logdir}/{channel}.log"
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(filename, "a") as f:
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} <{event.source.nick}> {event.arguments[0]}\n")
 
     def privmsg(self, event):
@@ -36,5 +38,5 @@ class Logger(object):
         nick = event.source.nick
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         filename = f"{self.config.logdir}/nick_{nick}.log"
-        with open(filename, "a") as f:
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} {event.arguments[0]}\n")
