@@ -1,12 +1,15 @@
 """Bot module for Mentat. This module contains the class for the bot."""
 
 import logging
+import sys
+import io
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
+import argparse
 
 
 class Mentat(irc.bot.SingleServerIRCBot):
@@ -119,23 +122,73 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
         connection = self.connection
 
+        parser = argparse.ArgumentParser(
+            description="Mentat IRC bot",
+            prog="Mentat:",
+            exit_on_error=False,
+            epilog="Add --help after the command to get help about the command",
+        )
+
+        parser.add_argument(
+            "cmd", choices=["hola", "op", "dados"], help="Command to execute"
+        )
+
         cmd_list = cmd.split()
 
-        # c.privmsg(nick, "I was told to " + cmd)
-        if cmd_list[0].lower() == "hola":
-            logging.debug("Command: hola")
-            connection.privmsg(talk_to, "Hola, " + nick)
-            # c.notice(talk_to, "Hola, " + nick)
-        elif cmd_list[0].lower() == "op":
-            logging.debug("Command: op")
-            if len(cmd_list) > 1 and len(cmd_list) < 4:
-                nick_to_op = cmd_list[1]
-                channel = ""
-                try:
-                    channel = cmd_list[2]
-                except IndexError:
-                    channel = talk_to
-                logging.debug("Channel: %s, Nick to op: %s", channel, nick_to_op)
-                connection.mode(channel, f"+o {nick_to_op}")
-            elif len(cmd_list) == 1 and event.type != "privmsg":
-                connection.mode(talk_to, f"+o {nick}")
+        # Redirect stdout to capture the help text
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+
+        help_text = ""
+        command = ""
+        try:
+            command = parser.parse_args(cmd_list[0]).cmd
+        except SystemExit:
+            # Get the help text
+            help_text = sys.stdout.getvalue()
+        finally:
+            # Restore stdout
+            sys.stdout = old_stdout
+
+        if help_text != "":
+            logging.debug("Help text: %s", help_text)
+            connection.privmsg(talk_to, help_text)
+        else:
+            if command == "hola":
+                logging.debug("Command: hola")
+                connection.privmsg(talk_to, "Hola, " + nick)
+            elif command == "op":
+                logging.debug("Command: op")
+                if len(cmd_list) > 1 and len(cmd_list) < 4:
+                    nick_to_op = cmd_list[1]
+                    channel = ""
+                    try:
+                        channel = cmd_list[2]
+                    except IndexError:
+                        channel = talk_to
+                    logging.debug("Channel: %s, Nick to op: %s", channel, nick_to_op)
+                    connection.mode(channel, f"+o {nick_to_op}")
+                elif len(cmd_list) == 1 and event.type != "privmsg":
+                    connection.mode(talk_to, f"+o {nick}")
+            elif command == "dados":
+                logging.debug("Command: dados")
+                connection.privmsg(talk_to, "Tirando dados...")
+                connection.privmsg(talk_to, "El resultado es: 4")
+        # # c.privmsg(nick, "I was told to " + cmd)
+        # if cmd_list[0].lower() == "hola":
+        #     logging.debug("Command: hola")
+        #     connection.privmsg(talk_to, "Hola, " + nick)
+        #     # c.notice(talk_to, "Hola, " + nick)
+        # elif cmd_list[0].lower() == "op":
+        #     logging.debug("Command: op")
+        #     if len(cmd_list) > 1 and len(cmd_list) < 4:
+        #         nick_to_op = cmd_list[1]
+        #         channel = ""
+        #         try:
+        #             channel = cmd_list[2]
+        #         except IndexError:
+        #             channel = talk_to
+        #         logging.debug("Channel: %s, Nick to op: %s", channel, nick_to_op)
+        #         connection.mode(channel, f"+o {nick_to_op}")
+        #     elif len(cmd_list) == 1 and event.type != "privmsg":
+        #         connection.mode(talk_to, f"+o {nick}")
