@@ -6,11 +6,11 @@ import io
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
+from mentat.commands.dados import dados
 from mentat.commands.hola import hola
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
-from mentat.commands import *
 import argparse
 
 
@@ -164,7 +164,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         else:
             if command == "hola":
                 logging.debug("Command: hola")
-                hola.hola(connection, event, cmd_list[1:])
+                hola(connection, event, cmd_list[1:])
                 # connection.privmsg(talk_to, "Hola, " + nick)
             elif command == "op":
                 logging.debug("Command: op")
@@ -181,23 +181,4 @@ class Mentat(irc.bot.SingleServerIRCBot):
                     connection.mode(talk_to, f"+o {nick}")
             elif command == "dados":
                 logging.debug("Command: dados")
-                connection.privmsg(talk_to, "Tirando dados...")
-                connection.privmsg(talk_to, "El resultado es: 4")
-        # # c.privmsg(nick, "I was told to " + cmd)
-        # if cmd_list[0].lower() == "hola":
-        #     logging.debug("Command: hola")
-        #     connection.privmsg(talk_to, "Hola, " + nick)
-        #     # c.notice(talk_to, "Hola, " + nick)
-        # elif cmd_list[0].lower() == "op":
-        #     logging.debug("Command: op")
-        #     if len(cmd_list) > 1 and len(cmd_list) < 4:
-        #         nick_to_op = cmd_list[1]
-        #         channel = ""
-        #         try:
-        #             channel = cmd_list[2]
-        #         except IndexError:
-        #             channel = talk_to
-        #         logging.debug("Channel: %s, Nick to op: %s", channel, nick_to_op)
-        #         connection.mode(channel, f"+o {nick_to_op}")
-        #     elif len(cmd_list) == 1 and event.type != "privmsg":
-        #         connection.mode(talk_to, f"+o {nick}")
+                dados(connection, event, cmd_list[1:])

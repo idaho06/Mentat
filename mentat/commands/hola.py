@@ -40,7 +40,7 @@ def hola(connection: ServerConnection, event, args: list):
     sys.stdout = io.StringIO()
 
     help_text = ""
-    hola_args = ""
+    hola_args = argparse.Namespace()
     try:
         hola_args = parser.parse_args(args)
     except SystemExit:
