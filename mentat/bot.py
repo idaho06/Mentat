@@ -6,9 +6,11 @@ import io
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
+from mentat.commands.hola import hola
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
+from mentat.commands import *
 import argparse
 
 
@@ -142,21 +144,28 @@ class Mentat(irc.bot.SingleServerIRCBot):
         help_text = ""
         command = ""
         try:
-            command = parser.parse_args(cmd_list[0]).cmd
+            command = parser.parse_args([cmd_list[0]]).cmd
         except SystemExit:
             # Get the help text
             help_text = sys.stdout.getvalue()
+        except argparse.ArgumentError as exc:
+            # Get the help text
+            help_text = sys.stdout.getvalue()
+            # Add the error message to the help text
+            help_text += f"\n{exc}"
         finally:
             # Restore stdout
             sys.stdout = old_stdout
 
         if help_text != "":
             logging.debug("Help text: %s", help_text)
-            connection.privmsg(talk_to, help_text)
+            for help_line in help_text.splitlines():
+                connection.privmsg(talk_to, help_line)
         else:
             if command == "hola":
                 logging.debug("Command: hola")
-                connection.privmsg(talk_to, "Hola, " + nick)
+                hola.hola(connection, event, cmd_list[1:])
+                # connection.privmsg(talk_to, "Hola, " + nick)
             elif command == "op":
                 logging.debug("Command: op")
                 if len(cmd_list) > 1 and len(cmd_list) < 4:
