@@ -6,6 +6,7 @@ import io
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
+from jaraco.stream import buffer
 from mentat.commands.dados import dados
 from mentat.commands.hola import hola
 from mentat.config import Config
@@ -22,6 +23,9 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.config = config
         self.logger = Logger(self.config)
         self.status = Status()  # first status is INIT
+
+        #ServerConnection.buffer_class.errors = "replace"
+        ServerConnection.buffer_class = buffer.LenientDecodingLineBuffer
 
         irc.bot.SingleServerIRCBot.__init__(
             self,
@@ -132,7 +136,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         )
 
         parser.add_argument(
-            "cmd", choices=["hola", "op", "dados"], help="Command to execute"
+            "cmd", choices=["login", "hola", "op", "dados"], help="Command to execute"
         )
 
         cmd_list = cmd.split()

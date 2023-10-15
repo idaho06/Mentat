@@ -14,7 +14,9 @@ class Config(object):
     irc_realname = "Piter de Vries"
     irc_ident = "mentat"
     irc_password = ""
-    irc_channels = ["#mentat", "#malos"]
+    irc_channels = ["#mentat", "#madrid"]
+    irc_admin_password = ""
+    irc_admin_users = ["Idaho"]
 
     def __init__(self, args: argparse.Namespace):
         logging.debug("Entering Config class")
@@ -36,6 +38,8 @@ class Config(object):
         # if argument --password is used, sets irc_password
         if args.password:
             self.irc_password = args.password
+        if args.admin_password:
+            self.irc_admin_password = args.admin_password
         # checks if configfile exists, if not, creates it
         if not os.path.exists(self.configfile):
             # open(self.configfile, "a").close()
@@ -53,6 +57,7 @@ class Config(object):
             db["IRC_IDENT"] = self.irc_ident
             db["IRC_PASSWORD"] = self.irc_password
             db["IRC_CHANNELS"] = self.irc_channels
+            db["IRC_ADMIN_PASSWORD"] = self.irc_admin_password
             db["LOGDIR"] = self.logdir
 
     def load_configfile(self, configfile: str):
@@ -65,4 +70,5 @@ class Config(object):
             self.irc_ident = db["IRC_IDENT"]
             self.irc_password = db["IRC_PASSWORD"]
             self.irc_channels = db["IRC_CHANNELS"]
+            self.irc_admin_password = db["IRC_ADMIN_PASSWORD"]
             self.logdir = db["LOGDIR"]
