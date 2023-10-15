@@ -9,6 +9,7 @@ from irc.client import ip_numstr_to_quad, ServerConnection
 from jaraco.stream import buffer
 from mentat.commands.dados import dados
 from mentat.commands.hola import hola
+from mentat.commands.login import login
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
@@ -170,7 +171,12 @@ class Mentat(irc.bot.SingleServerIRCBot):
                 logging.debug("Command: hola")
                 hola(connection, event, cmd_list[1:])
                 # connection.privmsg(talk_to, "Hola, " + nick)
+            elif command == "login":
+                logging.debug("Command: login")
+                login(connection, event, cmd_list[1:], self.config)
             elif command == "op":
+                if self.config.is_admin(nick)==False:
+                    return
                 logging.debug("Command: op")
                 if len(cmd_list) > 1 and len(cmd_list) < 4:
                     nick_to_op = cmd_list[1]

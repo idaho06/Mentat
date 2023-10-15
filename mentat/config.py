@@ -3,6 +3,7 @@ import shelve
 import os
 import logging
 import argparse
+import irc.strings
 
 
 class Config(object):
@@ -14,9 +15,9 @@ class Config(object):
     irc_realname = "Piter de Vries"
     irc_ident = "mentat"
     irc_password = ""
-    irc_channels = ["#mentat", "#madrid"]
+    irc_channels = ["#mentat", "#madrid", "#valencia"]
     irc_admin_password = ""
-    irc_admin_users = ["Idaho"]
+    irc_admin_users = set()
 
     def __init__(self, args: argparse.Namespace):
         logging.debug("Entering Config class")
@@ -40,12 +41,28 @@ class Config(object):
             self.irc_password = args.password
         if args.admin_password:
             self.irc_admin_password = args.admin_password
+        self.irc_admin_users.add("idaho") # Idaho is always admin
         # checks if configfile exists, if not, creates it
         if not os.path.exists(self.configfile):
             # open(self.configfile, "a").close()
             self.create_configfile(self.configfile)
         else:
             self.load_configfile(self.configfile)
+
+    def set_admin(self, admin: str):
+        logging.debug(f"Entering set_admin function. Admin: {admin}")
+        # admin to lower case
+        admin_lower = irc.strings.lower(admin)
+        self.irc_admin_users.add(admin_lower)
+
+    def is_admin(self, admin: str) -> bool:
+        logging.debug(f"Entering is_admin function. Admin: {admin}")
+        # admin to lower case
+        admin_lower = irc.strings.lower(admin)
+        if admin_lower in self.irc_admin_users:
+            return True
+        else:
+            return False
 
     def create_configfile(self, configfile: str):
         logging.debug(f"Entering create_configfile function. Configfile: {configfile}")
