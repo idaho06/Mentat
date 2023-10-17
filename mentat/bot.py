@@ -10,6 +10,8 @@ from jaraco.stream import buffer
 from mentat.commands.dados import dados
 from mentat.commands.hola import hola
 from mentat.commands.login import login
+from mentat.commands.desconectar import desconectar
+from mentat.commands.morir import morir
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
@@ -137,7 +139,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         )
 
         parser.add_argument(
-            "cmd", choices=["login", "hola", "op", "dados"], help="Command to execute"
+            "cmd", choices=["login", "hola", "op", "dados", "desconectar", "morir", "join", "part"], help="Command to execute"
         )
 
         cmd_list = cmd.split()
@@ -145,6 +147,9 @@ class Mentat(irc.bot.SingleServerIRCBot):
         # Redirect stdout to capture the help text
         old_stdout = sys.stdout
         sys.stdout = io.StringIO()
+
+        old_stderr = sys.stderr
+        sys.stderr = io.StringIO()
 
         help_text = ""
         command = ""
@@ -158,9 +163,13 @@ class Mentat(irc.bot.SingleServerIRCBot):
             help_text = sys.stdout.getvalue()
             # Add the error message to the help text
             help_text += f"\n{exc}"
+        except Exception as exc:
+            logging.error("Exception: %s", exc)
         finally:
+            help_text += sys.stderr.getvalue()
             # Restore stdout
             sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
         if help_text != "":
             logging.debug("Help text: %s", help_text)
@@ -192,3 +201,12 @@ class Mentat(irc.bot.SingleServerIRCBot):
             elif command == "dados":
                 logging.debug("Command: dados")
                 dados(connection, event, cmd_list[1:])
+            elif command == "desconectar":
+                logging.debug("Command: desconectar")
+                desconectar(connection, event, cmd_list[1:], self.config)
+                self.status.transition("disconnect")
+
+            elif command == "morir":
+                logging.debug("Command: morir")
+                morir(connection, event, cmd_list[1:], self.config)
+

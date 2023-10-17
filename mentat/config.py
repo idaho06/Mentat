@@ -15,7 +15,7 @@ class Config(object):
     irc_realname = "Piter de Vries"
     irc_ident = "mentat"
     irc_password = ""
-    irc_channels = ["#mentat", "#madrid", "#valencia"]
+    irc_channels = ["#mentat", "#malos"]
     irc_admin_password = ""
     irc_admin_users = set()
 
