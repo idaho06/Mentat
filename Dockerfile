@@ -2,12 +2,12 @@ ARG PASSWORD=docker_build_--build-arg_PASSWORD...
 ARG ADMINPASSWORD=docker_build_--build-arg_ADMINPASSWORD...
 ARG LOGDIR=/var/log/mentat
 
-FROM python:3
+FROM python:latest
 
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 COPY mentat /usr/src/app/mentat
 
