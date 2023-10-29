@@ -3,6 +3,7 @@
 import logging
 import sys
 import io
+import argparse
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
@@ -15,7 +16,7 @@ from mentat.commands.morir import morir
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
-import argparse
+
 
 
 class Mentat(irc.bot.SingleServerIRCBot):
@@ -184,7 +185,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
                 logging.debug("Command: login")
                 login(connection, event, cmd_list[1:], self.config)
             elif command == "op":
-                if self.config.is_admin(nick)==False:
+                if not self.config.is_admin(nick):
                     return
                 logging.debug("Command: op")
                 if len(cmd_list) > 1 and len(cmd_list) < 4:
