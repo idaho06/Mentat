@@ -1,6 +1,6 @@
-import logging
 """This module contains the class that defines the current status of the bot."""
 
+import logging
 
 class Status(object):
     """Class that defines the current status of the bot."""

@@ -1,10 +1,11 @@
+"""This is the desconectar command module."""
+
 # import io
 # import sys
 # import logging
 # import argparse
 from irc.client import ServerConnection
 from mentat.config import Config
-
 
 
 def desconectar(connection: ServerConnection, event, args, config: Config):

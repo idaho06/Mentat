@@ -1,12 +1,17 @@
-from appdirs import user_config_dir, user_log_dir
+"""Configuration module for Mentat. 
+The class stores the initial configuration of the bot and controls the configuration file."""
+
+
 import shelve
 import os
 import logging
 import argparse
+from appdirs import user_config_dir, user_log_dir
 import irc.strings
 
 
 class Config(object):
+    """Class for the configuration of the bot."""
     # ...
     # IRC settings
     irc_server = "proxy-irc.chathispano.com"
@@ -41,7 +46,7 @@ class Config(object):
             self.irc_password = args.password
         if args.admin_password:
             self.irc_admin_password = args.admin_password
-        self.irc_admin_users.add("idaho") # Idaho is always admin
+        self.irc_admin_users.add("idaho")  # Idaho is always admin
         # checks if configfile exists, if not, creates it
         if not os.path.exists(self.configfile):
             # open(self.configfile, "a").close()
@@ -50,13 +55,15 @@ class Config(object):
             self.load_configfile(self.configfile)
 
     def set_admin(self, admin: str):
-        logging.debug(f"Entering set_admin function. Admin: {admin}")
+        """Adds an admin to the admin list."""
+        logging.debug("Entering set_admin function. Admin: %s", admin)
         # admin to lower case
         admin_lower = irc.strings.lower(admin)
         self.irc_admin_users.add(admin_lower)
 
     def is_admin(self, admin: str) -> bool:
-        logging.debug(f"Entering is_admin function. Admin: {admin}")
+        """Checks if a user is admin."""
+        logging.debug("Entering is_admin function. Admin: %s", admin)
         # admin to lower case
         admin_lower = irc.strings.lower(admin)
         if admin_lower in self.irc_admin_users:
@@ -65,7 +72,9 @@ class Config(object):
             return False
 
     def create_configfile(self, configfile: str):
-        logging.debug(f"Entering create_configfile function. Configfile: {configfile}")
+        """Creates the configuration file."""
+        logging.debug(
+            "Entering create_configfile function. Configfile: %s", configfile)
         with shelve.open(configfile) as db:
             db["IRC_SERVER"] = self.irc_server
             db["IRC_PORT"] = self.irc_port
@@ -78,7 +87,9 @@ class Config(object):
             db["LOGDIR"] = self.logdir
 
     def load_configfile(self, configfile: str):
-        logging.debug(f"Entering load_configfile function. Configfile: {configfile}")
+        """Loads the configuration file."""
+        logging.debug(
+            "Entering load_configfile function. Configfile: %s", configfile)
         with shelve.open(configfile) as db:
             self.irc_server = db["IRC_SERVER"]
             self.irc_port = db["IRC_PORT"]
