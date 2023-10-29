@@ -14,6 +14,7 @@ from mentat.commands.login import login
 from mentat.commands.desconectar import desconectar
 from mentat.commands.morir import morir
 from mentat.commands.join import join
+from mentat.commands.part import part
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
@@ -213,6 +214,10 @@ class Mentat(irc.bot.SingleServerIRCBot):
             elif command == "join":
                 logging.debug("Command: join")
                 join(connection, event, cmd_list[1:], self.config)
+            elif command == "part":
+                logging.debug("Command: part")
+                part(connection, event, cmd_list[1:], self.config)
+
 
 
 
