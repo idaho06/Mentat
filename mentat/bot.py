@@ -20,7 +20,6 @@ from mentat.logger import Logger
 from mentat.status import Status
 
 
-
 class Mentat(irc.bot.SingleServerIRCBot):
     """Class for the bot."""
 
@@ -30,7 +29,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.logger = Logger(self.config)
         self.status = Status()  # first status is INIT
 
-        #ServerConnection.buffer_class.errors = "replace"
+        # ServerConnection.buffer_class.errors = "replace"
         ServerConnection.buffer_class = buffer.LenientDecodingLineBuffer
 
         irc.bot.SingleServerIRCBot.__init__(
@@ -72,16 +71,20 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_welcome(self, connection: ServerConnection, event):
         """Function to handle the welcome message."""
-        logging.debug("Entering on_welcome function: c: %s, e: %s", connection, event)
-        self.status.transition("connected")  # change status to Status.CONNECTED
+        logging.debug(
+            "Entering on_welcome function: c: %s, e: %s", connection, event)
+        # change status to Status.CONNECTED
+        self.status.transition("connected")
         # for channel in self.channels:
         #     c.join(channel)
         #     logging.info(f"Joining channel: {channel}")
 
     def on_endofmotd(self, connection: ServerConnection, event):
         """Function to handle the end of MOTD."""
-        logging.debug("Entering on_endofmotd function: c: %s, e: %s", connection, event)
-        logging.info("End of MOTD received. Joining channels: %s", self.channels)
+        logging.debug(
+            "Entering on_endofmotd function: c: %s, e: %s", connection, event)
+        logging.info(
+            "End of MOTD received. Joining channels: %s", self.channels)
         for channel in self.config.irc_channels:
             logging.info("Joining channel: %s", channel)
             connection.join(channel)
@@ -89,7 +92,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_pubmsg(self, connection: ServerConnection, event):
         """Function to handle public messages."""
-        logging.debug("Entering on_pubmsg function: c: %s, e: %s", connection, event)
+        logging.debug("Entering on_pubmsg function: c: %s, e: %s",
+                      connection, event)
         self.logger.pubmsg(event)
         subject = event.arguments[0].split(":", 1)
         if len(subject) > 1 and irc.strings.lower(subject[0]) == irc.strings.lower(
@@ -99,9 +103,22 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_privmsg(self, connection: ServerConnection, event):
         """Function to handle private messages."""
-        logging.debug("Entering on_privmsg function: c: %s, e: %s", connection, event)
+        logging.debug(
+            "Entering on_privmsg function: c: %s, e: %s", connection, event)
         self.logger.privmsg(event)
         self.do_command(event, event.arguments[0])
+
+    def on_join(self, connection: ServerConnection, event):
+        """Function to handle join messages."""
+        logging.debug("Entering on_join function: c: %s, e: %s",
+                      connection, event)
+        self.logger.join_part(event)
+
+    def on_part(self, connection: ServerConnection, event):
+        """Function to handle part messages."""
+        logging.debug("Entering on_part function: c: %s, e: %s",
+                      connection, event)
+        self.logger.join_part(event)
 
     def on_dccmsg(self, connection: ServerConnection, event):
         """Function to handle DCC messages."""
@@ -124,7 +141,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def do_command(self, event, cmd: str):
         """Function to handle commands."""
-        logging.debug("Entering do_command function: e: %s, cmd: %s", event, cmd)
+        logging.debug(
+            "Entering do_command function: e: %s, cmd: %s", event, cmd)
         nick = event.source.nick
         talk_to = None
         if event.type == "privmsg":
@@ -142,7 +160,9 @@ class Mentat(irc.bot.SingleServerIRCBot):
         )
 
         parser.add_argument(
-            "cmd", choices=["login", "hola", "op", "dados", "desconectar", "morir", "join", "part"], help="Command to execute"
+            "cmd", 
+            choices=["login", "hola", "op", "dados", "desconectar", "morir", "join", "part"], 
+            help="Command to execute"
         )
 
         cmd_list = cmd.split()
@@ -197,7 +217,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
                         channel = cmd_list[2]
                     except IndexError:
                         channel = talk_to
-                    logging.debug("Channel: %s, Nick to op: %s", channel, nick_to_op)
+                    logging.debug("Channel: %s, Nick to op: %s",
+                                  channel, nick_to_op)
                     connection.mode(channel, f"+o {nick_to_op}")
                 elif len(cmd_list) == 1 and event.type != "privmsg":
                     connection.mode(talk_to, f"+o {nick}")
@@ -217,7 +238,3 @@ class Mentat(irc.bot.SingleServerIRCBot):
             elif command == "part":
                 logging.debug("Command: part")
                 part(connection, event, cmd_list[1:], self.config)
-
-
-
-
