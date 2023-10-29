@@ -1,0 +1,13 @@
+---
+version: "2.1"
+services:
+  mentat:
+    image: mentat
+    container_name: Mentat
+    environment:
+      - PUID=65534
+      - PGID=65534
+      - TZ=Europe/Madrid
+    volumes:
+      - /srv/almacen/mentat/logs:/var/log/mentat
+    restart: unless-stopped
