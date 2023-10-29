@@ -6,9 +6,11 @@ import io
 import sys
 import logging
 import argparse
+from irc.client import ServerConnection
 from mentat.config import Config
 
-def join(connection, event, args, config: Config):
+
+def join(connection: ServerConnection, event, args, config: Config):
     """Function to handle the join command."""
     logging.debug("Entering join function")
     logging.debug("Event: %s, Args: %s", event, args)
@@ -74,4 +76,3 @@ def join(connection, event, args, config: Config):
         return
     
     connection.join(join_args.channel)
-    
