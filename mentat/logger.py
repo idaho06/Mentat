@@ -29,7 +29,7 @@ class Logger(object):
         filename = f"{self.config.logdir}/{channel}.log"
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} PUBMSG <{event.source.nick}> {event.arguments[0]}\n")
+            f.write(f"{time} MSG <{event.source.nick}> {event.arguments[0]}\n")
 
     def join_part(self, event):
         """Stores join and part messages from the channels."""
@@ -45,8 +45,13 @@ class Logger(object):
         filename = f"{self.config.logdir}/{channel}.log"
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         action = event.type
+        tag = '==='
+        if action == 'join':
+            tag = '==>'
+        elif action == 'part':
+            tag = '<=='
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} * {event.source.nick} {action}ed the channel\n")
+            f.write(f"{time} {tag} {event.source.nick} {action}ed the channel\n")
 
     def privmsg(self, event):
         """Stores messages from private messages."""
@@ -73,4 +78,26 @@ class Logger(object):
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         action = event.arguments[0]
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} * {event.source.nick} {action}\n")
+            f.write(f"{time} -*- {event.source.nick} {action}\n")
+
+    def kick(self, event):
+        """Stores kick messages from the channels."""
+        logging.debug("Entering kick function: e: %s", event)
+        logging.info(
+            "Channel: %s | User: %s | Action: %s",
+            event.target,
+            event.source.nick,
+            event.arguments[0],
+        )
+        channel = event.target
+        channel = channel.replace("#", "channel_")
+        filename = f"{self.config.logdir}/{channel}.log"
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        action = event.arguments[0]
+        reason = ''
+        try:
+            reason = event.arguments[1]
+        except IndexError:
+            pass
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
+            f.write(f"{time} <=* {event.source.nick} has kicked {action}: {reason}\n")
