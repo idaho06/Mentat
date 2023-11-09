@@ -138,6 +138,12 @@ class Mentat(irc.bot.SingleServerIRCBot):
             except ValueError:
                 return
             self.dcc_connect(address, port)
+    
+    def on_action(self, connection: ServerConnection, event):
+        """Function to handle actions."""
+        logging.debug("Entering on_action function: c: %s, e: %s",
+                      connection, event)
+        self.logger.action(event)
 
     def do_command(self, event, cmd: str):
         """Function to handle commands."""

@@ -30,7 +30,7 @@ class Logger(object):
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} PUBMSG <{event.source.nick}> {event.arguments[0]}\n")
-    
+
     def join_part(self, event):
         """Stores join and part messages from the channels."""
         logging.debug("Entering join function: e: %s", event)
@@ -57,3 +57,20 @@ class Logger(object):
         filename = f"{self.config.logdir}/nick_{nick}.log"
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} {event.arguments[0]}\n")
+
+    def action(self, event):
+        """Stores actions from the channels."""
+        logging.debug("Entering action function: e: %s", event)
+        logging.info(
+            "Channel: %s | User: %s | Action: %s",
+            event.target,
+            event.source.nick,
+            event.arguments[0],
+        )
+        channel = event.target
+        channel = channel.replace("#", "channel_")
+        filename = f"{self.config.logdir}/{channel}.log"
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        action = event.arguments[0]
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
+            f.write(f"{time} * {event.source.nick} {action}\n")
