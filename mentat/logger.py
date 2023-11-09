@@ -101,3 +101,18 @@ class Logger(object):
             pass
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} <=* {event.source.nick} has kicked {action}: {reason}\n")
+
+    def nick(self, event):
+        """Stores nick changes."""
+        logging.debug("Entering nick function: e: %s", event)
+        logging.info(
+            "nick %s changes nick to: %s",
+            event.source.nick,
+            event.target,
+        )
+        nick = event.source.nick
+        nick_target = event.target
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        filename = f"{self.config.logdir}/nick_{nick}.log"
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
+            f.write(f"{time} *** {event.source.nick} is now known as {nick_target}\n")

@@ -151,6 +151,12 @@ class Mentat(irc.bot.SingleServerIRCBot):
                       connection, event)
         self.logger.kick(event)
 
+    def on_nick(self, connection: ServerConnection, event):
+        """Function to handle nick changes."""
+        logging.debug("Entering on_nick function: c: %s, e: %s",
+                      connection, event)
+        self.logger.nick(event)
+
     def do_command(self, event, cmd: str):
         """Function to handle commands."""
         logging.debug(
