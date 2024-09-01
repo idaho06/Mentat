@@ -117,4 +117,19 @@ class Logger(object):
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} *** {nick} is now known as {nick_target}\n")
     
-
+    def mode(self, event):
+        """Stores mode changes."""
+        logging.debug("Entering mode function: e: %s", event)
+        logging.info(
+            "Channel: %s | User: %s | Mode: %s",
+            event.target,
+            event.source.nick,
+            event.arguments[0],
+        )
+        channel = event.target
+        channel = channel.replace("#", "channel_")
+        filename = f"{self.config.logdir}/{channel}.log"
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        action = event.arguments[0]
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
+            f.write(f"{time} *** {event.source.nick} sets mode: {action}\n")
