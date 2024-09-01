@@ -133,3 +133,17 @@ class Logger(object):
         action = event.arguments[0]
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} *** {event.source.nick} sets mode: {action}\n")
+
+    def quit(self, event):
+        """Stores quit messages."""
+        logging.debug("Entering quit function: e: %s", event)
+        logging.info(
+            "User: %s | Quit message: %s",
+            event.source.nick,
+            event.arguments[0],
+        )
+        nick = event.source.nick
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        filename = f"{self.config.logdir}/nick_{nick}.log"
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
+            f.write(f"{time} <<< {event.source.nick} has quit: {event.arguments[0]}\n")
