@@ -16,6 +16,7 @@ def join(connection: ServerConnection, event, args, config: Config):
     logging.debug("Event: %s, Args: %s", event, args)
 
     if not config.is_admin(event.source.nick):
+        logging.debug("User is not admin")
         return
 
     nick = event.source.nick
