@@ -1,2 +1,2 @@
-appdirs >= 1.4.4
-irc >= 20.3.0
+appdirs
+irc
