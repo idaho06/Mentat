@@ -77,3 +77,4 @@ def join(connection: ServerConnection, event, args, config: Config):
         return
     
     connection.join(join_args.channel)
+    config.irc_channels.append(join_args.channel)

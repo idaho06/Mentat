@@ -1,21 +1,25 @@
 # -*- coding: utf-8 -*-
 
-""" Module for the part command. """
+"""Module for the estado command.
+   If user is admin, then shows uptime, and list of logged in channels.
+   TODO: more info
+"""
 
 import io
 import sys
 import logging
 import argparse
+from datetime import datetime
 from irc.client import ServerConnection
 from mentat.config import Config
 
-
-def part(connection: ServerConnection, event, args, config: Config):
-    """Function to handle the part command."""
-    logging.debug("Entering part function")
+def estado(connection: ServerConnection, event, args, config: Config):
+    """Function to handle the estado command."""
+    logging.debug("Entering estado function")
     logging.debug("Event: %s, Args: %s", event, args)
 
     if not config.is_admin(event.source.nick):
+        logging.debug("User is not admin")
         return
 
     nick = event.source.nick
@@ -26,23 +30,15 @@ def part(connection: ServerConnection, event, args, config: Config):
         talk_to = event.target
 
     parser = argparse.ArgumentParser(
-        description="Part command",
-        prog="part",
+        description="Estado command",
+        prog="estado",
         exit_on_error=False,
     )
 
     parser.add_argument(
-        "channel",
+        "estado",
         type=str,
-        help="Channel to part"
-    )
-
-    parser.add_argument(
-        "-r",
-        "--reason",
-        type=str,
-        help="Reason for parting",
-        default="Leaving"
+        help="Estado del bot"
     )
 
     # Redirect stdout to capture the help text
@@ -53,9 +49,9 @@ def part(connection: ServerConnection, event, args, config: Config):
     sys.stderr = io.StringIO()
 
     help_text = ""
-    part_args = argparse.Namespace()
+    estado_args = argparse.Namespace()
     try:
-        part_args = parser.parse_args(args)
+        estado_args = parser.parse_args(args)
     except SystemExit:
         # Get the help text
         help_text = sys.stdout.getvalue()
@@ -65,12 +61,11 @@ def part(connection: ServerConnection, event, args, config: Config):
         # Add the error message to the help text
         help_text += f"\n{exc}"
     except argparse.ArgumentTypeError as exc:
-        logging.error("Exception: %s", exc)
         # Get the help text
         help_text = sys.stdout.getvalue()
         # Add the error message to the help text
+        help_text += f"\n{exc}"
     finally:
-        help_text += sys.stderr.getvalue()
         # Restore stdout
         sys.stdout = old_stdout
         sys.stderr = old_stderr
@@ -80,6 +75,11 @@ def part(connection: ServerConnection, event, args, config: Config):
         for help_line in help_text.splitlines():
             connection.privmsg(talk_to, help_line)
         return
+    
+    uptime = datetime.now() - config.start_time
+    connection.privmsg(talk_to, f"Uptime: {uptime}")
+    connection.privmsg(talk_to, f"Channels: {config.irc_channels}")
+    connection.privmsg(talk_to, f"Admin users: {config.irc_admin_users}")
+    
+    return
 
-    connection.part(part_args.channel, part_args.reason)
-    config.irc_channels.remove(part_args.channel)

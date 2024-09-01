@@ -2,6 +2,7 @@
 The class stores the initial configuration of the bot and controls the configuration file."""
 
 
+from datetime import datetime
 import shelve
 import os
 import logging
@@ -28,6 +29,7 @@ class Config(object):
         logging.debug("Entering Config class")
         self.configdir = user_config_dir("mentat")
         self.logdir = user_log_dir("mentat")
+        self.start_time = datetime.now()
         if args.logdir:
             self.logdir = args.logdir
         self.configfile = f"{self.configdir}/mentat.conf"

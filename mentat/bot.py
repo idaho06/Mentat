@@ -15,6 +15,7 @@ from mentat.commands.desconectar import desconectar
 from mentat.commands.morir import morir
 from mentat.commands.join import join
 from mentat.commands.part import part
+from mentat.commands.estado import estado
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
@@ -150,6 +151,13 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_kick function: c: %s, e: %s",
                       connection, event)
         self.logger.kick(event)
+        # check if the bot was kicked
+        if event.arguments[0] == self.config.irc_nick:
+            # connection.join(event.target)
+            # TODO: add an auto-rejoin feature to the config.
+
+            # remove the channel from the list of channels
+            self.config.irc_channels.remove(event.target)
 
     def on_nick(self, connection: ServerConnection, event):
         """Function to handle nick changes."""
@@ -179,7 +187,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
         parser.add_argument(
             "cmd", 
-            choices=["login", "hola", "op", "dados", "desconectar", "morir", "join", "part"], 
+            choices=["login", "hola", "op", "dados", "desconectar", "morir", "join", "part", "estado"], 
             help="Command to execute"
         )
 
@@ -256,3 +264,6 @@ class Mentat(irc.bot.SingleServerIRCBot):
             elif command == "part":
                 logging.debug("Command: part")
                 part(connection, event, cmd_list[1:], self.config)
+            elif command == "estado":
+                logging.debug("Command: estado")
+                estado(connection, event, cmd_list[1:], self.config)
