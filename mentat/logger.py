@@ -113,6 +113,8 @@ class Logger(object):
         nick = event.source.nick
         nick_target = event.target
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        filename = f"{self.config.logdir}/nick_{nick}.log"
+        filename = f"{self.config.logdir}/nick_changes.log"
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} *** {event.source.nick} is now known as {nick_target}\n")
+            f.write(f"{time} *** {nick} is now known as {nick_target}\n")
+    
+
