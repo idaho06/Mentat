@@ -29,7 +29,7 @@ class Logger(object):
         filename = f"{self.config.logdir}/{channel}.log"
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} MSG <{event.source.nick}> {event.arguments[0]}\n")
+            f.write(f"{time} ::: <{event.source.nick}> {event.arguments[0]}\n")
 
     def join_part(self, event):
         """Stores join and part messages from the channels."""
