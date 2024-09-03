@@ -63,6 +63,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
                 "authenticate"
             )  # change status to Status.CONNECTING_AUTHENTICATING
             connection.nick(f"{connection.get_nickname()}:{self.config.irc_password}")
+            connection.mode(connection.get_nickname(), "+In")
         else:
             logging.error(
                 "Nickname in use or wrong password. Changing to %s_",
