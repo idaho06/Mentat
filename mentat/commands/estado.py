@@ -35,12 +35,6 @@ def estado(connection: ServerConnection, event, args, config: Config):
         exit_on_error=False,
     )
 
-    parser.add_argument(
-        "estado",
-        type=str,
-        help="Estado del bot"
-    )
-
     # Redirect stdout to capture the help text
     old_stdout = sys.stdout
     sys.stdout = io.StringIO()
