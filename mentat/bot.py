@@ -63,7 +63,6 @@ class Mentat(irc.bot.SingleServerIRCBot):
                 "authenticate"
             )  # change status to Status.CONNECTING_AUTHENTICATING
             connection.nick(f"{connection.get_nickname()}:{self.config.irc_password}")
-            connection.mode(connection.get_nickname(), "+In")
         else:
             logging.error(
                 "Nickname in use or wrong password. Changing to %s_",
@@ -85,6 +84,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
         """Function to handle the end of MOTD."""
         logging.debug(
             "Entering on_endofmotd function: c: %s, e: %s", connection, event)
+        logging.info("End of MOTD received. Setting mode +In")
+        connection.mode(connection.get_nickname(), "+In")
         logging.info(
             "End of MOTD received. Joining channels: %s", self.channels)
         for channel in self.config.irc_channels:
@@ -165,6 +166,12 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_nick function: c: %s, e: %s",
                       connection, event)
         self.logger.nick(event)
+    
+    def on_umode(self, connection: ServerConnection, event):
+        """Function to handle user modes."""
+        logging.debug("Entering on_umode function: c: %s, e: %s",
+                      connection, event)
+        self.logger.mode(event)
 
     def do_command(self, event, cmd: str):
         """Function to handle commands."""
