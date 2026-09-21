@@ -4,3 +4,7 @@ __pycache__/
 /.vscode
 /logs
 /mentat/__pycache__
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/

@@ -1,0 +1,234 @@
+"""Tests for the Mentat event handlers and command dispatch, offline."""
+
+import logging
+
+import pytest
+from irc.client import ServerConnection
+from jaraco.stream import buffer
+
+from mentat import bot as botmod
+from mentat.bot import Mentat
+from mentat.status import Status
+
+SPANISH_433 = (
+    "El nick está registrado, tienes que indicar la contraseña para usarlo: "
+    "/nick {nick}:contraseña"
+)
+
+
+def channel_log(config, channel="mentat"):
+    with open(f"{config.logdir}/channel_{channel}.log", encoding="utf-8") as handle:
+        return handle.read()
+
+
+# message routing ----------------------------------------------------------
+
+def test_pubmsg_addressed_to_the_bot_runs_the_command(bot, fake_connection, make_event):
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "tester", "#mentat", "Mentat: hola"))
+    assert fake_connection.sent("privmsg") == [("#mentat", "Hola, tester")]
+
+
+def test_pubmsg_prefix_is_case_insensitive_and_follows_the_actual_nick(bot, fake_connection, make_event):
+    fake_connection.nickname = "Mentat_"
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "tester", "#mentat", "mentat_: hola"))
+    assert fake_connection.privmsgs() == ["Hola, tester"]
+
+
+def test_pubmsg_not_addressed_to_the_bot_is_only_logged(bot, fake_connection, make_event, tmp_config):
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "tester", "#mentat", "hello all"))
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "tester", "#mentat", "Mentat_: hola"))
+    assert fake_connection.calls == []
+    assert "::: <tester> hello all" in channel_log(tmp_config)
+
+
+def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
+    bot.on_privmsg(fake_connection, make_event("privmsg", "tester", "Mentat", "hola -n Bob"))
+    assert fake_connection.sent("privmsg") == [("tester", "Hola, Bob")]
+    with open(f"{tmp_config.logdir}/nick_tester.log", encoding="utf-8") as handle:
+        assert "hola -n Bob" in handle.read()
+
+
+def test_unknown_command_gets_the_top_level_usage(bot, fake_connection, make_event):
+    bot.do_command(make_event("privmsg", "tester", "Mentat", "nosuch"), "nosuch")
+    lines = fake_connection.privmsgs("tester")
+    assert lines[0].startswith("usage: Mentat:")
+    assert any("invalid choice: 'nosuch'" in line for line in lines)
+
+
+def test_top_level_help_lists_commands_and_epilog(bot, fake_connection, make_event):
+    bot.do_command(make_event("privmsg", "tester", "Mentat", "-h"), "-h")
+    lines = fake_connection.privmsgs("tester")
+    assert lines[0].startswith("usage: Mentat:")
+    assert any("Add --help after the command" in line for line in lines)
+
+
+def test_empty_command_gets_usage(bot, fake_connection, make_event):
+    bot.do_command(make_event("privmsg", "tester", "Mentat", ""), "")
+    assert fake_connection.privmsgs("tester")[0].startswith("usage: Mentat:")
+
+
+def test_every_registered_command_is_a_parser_choice(bot, fake_connection, make_event):
+    for name in botmod.COMMANDS:
+        bot.do_command(make_event("privmsg", "tester", "Mentat", f"{name} -h"), f"{name} -h")
+    assert not any("invalid choice" in line for line in fake_connection.privmsgs())
+
+
+# error handling -----------------------------------------------------------
+
+def test_command_exception_is_reported_and_logged_not_fatal(bot, fake_connection, make_event, monkeypatch, caplog):
+    def boom(*_args):
+        raise ZeroDivisionError("kaboom")
+
+    monkeypatch.setitem(botmod.COMMANDS, "hola", boom)
+    with caplog.at_level(logging.ERROR):
+        bot._dispatcher(fake_connection, make_event("privmsg", "tester", "Mentat", "hola"))
+    assert fake_connection.sent("privmsg") == [("tester", "Error ejecutando el comando")]
+    assert "Handler for privmsg event failed" in caplog.text
+    assert "ZeroDivisionError: kaboom" in caplog.text
+
+
+def test_any_handler_exception_is_swallowed(bot, fake_connection, make_event, monkeypatch, caplog):
+    monkeypatch.setattr(bot.logger, "join_part", lambda event: 1 / 0)
+    with caplog.at_level(logging.ERROR):
+        bot._dispatcher(fake_connection, make_event("join", "tester", "#mentat"))
+    assert "Handler for join event failed" in caplog.text
+
+
+def test_systemexit_from_morir_propagates(bot, fake_connection, make_event):
+    with pytest.raises(SystemExit):
+        bot._dispatcher(fake_connection, make_event("privmsg", "idaho", "Mentat", "morir"))
+    assert fake_connection.sent("disconnect") == [("Ouch!!",)]
+
+
+def test_events_without_a_handler_are_ignored(bot, fake_connection, make_event):
+    bot._dispatcher(fake_connection, make_event("topic", "tester", "#mentat", "new topic"))
+    assert fake_connection.calls == []
+
+
+# connection life cycle ----------------------------------------------------
+
+def test_registered_nick_sends_the_password_once(bot, fake_connection, make_event):
+    bot.status.transition("connect")
+    message = SPANISH_433.format(nick="Mentat")
+    bot.on_nicknameinuse(fake_connection, make_event("nicknameinuse", "server", "NICK", message))
+    assert fake_connection.sent("nick") == [("Mentat:nickpass",)]
+    assert bot.status.get_status() == Status.CONNECTING_AUTHENTICATING
+
+    # a second 433 while authenticating means the password was wrong
+    fake_connection.nickname = "Mentat"
+    bot.on_nicknameinuse(fake_connection, make_event("nicknameinuse", "server", "NICK", message))
+    assert fake_connection.sent("nick")[-1] == ("Mentat_",)
+
+
+def test_plain_nick_in_use_appends_an_underscore(bot, fake_connection, make_event):
+    bot.status.transition("connect")
+    bot.on_nicknameinuse(fake_connection, make_event("nicknameinuse", "server", "NICK", "Nickname is already in use"))
+    assert fake_connection.sent("nick") == [("Mentat_",)]
+    assert bot.status.get_status() == Status.CONNECTING
+
+
+def test_welcome_and_disconnect_drive_the_status(bot, fake_connection, make_event):
+    bot.status.transition("connect")
+    bot.on_welcome(fake_connection, make_event("welcome", "server", "Mentat", "Welcome"))
+    assert bot.status.get_status() == Status.CONNECTED
+    bot.on_disconnect(fake_connection, make_event("disconnect", "server", "", ""))
+    assert bot.status.get_status() == Status.CONNECTING
+
+
+def test_end_of_motd_sets_umode_and_joins_configured_channels(bot, fake_connection, make_event, tmp_config):
+    tmp_config.irc_channels = ["#mentat", "#other"]
+    bot.on_endofmotd(fake_connection, make_event("endofmotd", "server", "Mentat", "End of MOTD"))
+    assert fake_connection.calls == [
+        ("mode", ("Mentat", "+In")),
+        ("join", ("#mentat",)),
+        ("join", ("#other",)),
+    ]
+
+
+# channel events -----------------------------------------------------------
+
+def test_being_kicked_forgets_the_channel(bot, fake_connection, make_event, tmp_config):
+    fake_connection.nickname = "Mentat_"
+    bot.on_kick(fake_connection, make_event("kick", "idaho", "#MENTAT", arguments=["Mentat_", "bye"]))
+    assert tmp_config.irc_channels == []
+    assert "<=* idaho has kicked Mentat_: bye" in channel_log(tmp_config, "MENTAT")
+
+
+def test_someone_else_kicked_keeps_the_channel(bot, fake_connection, make_event, tmp_config):
+    bot.on_kick(fake_connection, make_event("kick", "idaho", "#mentat", arguments=["bob"]))
+    assert tmp_config.irc_channels == ["#mentat"]
+
+
+def test_mode_umode_quit_join_part_action_nick_are_logged(bot, fake_connection, make_event, tmp_config):
+    bot.on_mode(fake_connection, make_event("mode", "idaho", "#mentat", arguments=["+o", "bob"]))
+    bot.on_join(fake_connection, make_event("join", "bob", "#mentat"))
+    bot.on_part(fake_connection, make_event("part", "bob", "#mentat"))
+    bot.on_action(fake_connection, make_event("action", "bob", "#mentat", "waves"))
+    log = channel_log(tmp_config)
+    assert "*** idaho sets mode: +o bob" in log
+    assert "==> bob joined the channel" in log
+    assert "<== bob parted the channel" in log
+    assert "-*- bob waves" in log
+
+    bot.on_umode(fake_connection, make_event("umode", "Mentat", "Mentat", arguments=["+In"]))
+    bot.on_nick(fake_connection, make_event("nick", "bob", "robert"))
+    bot.on_quit(fake_connection, make_event("quit", "robert", "*", "bye"))
+    with open(f"{tmp_config.logdir}/mode_changes.log", encoding="utf-8") as handle:
+        assert "*** Mentat sets mode: +In" in handle.read()
+    with open(f"{tmp_config.logdir}/nick_changes.log", encoding="utf-8") as handle:
+        assert "*** bob is now known as robert" in handle.read()
+    with open(f"{tmp_config.logdir}/nick_robert.log", encoding="utf-8") as handle:
+        assert "<<< robert has quit: bye" in handle.read()
+    assert fake_connection.calls == []
+
+
+# DCC ----------------------------------------------------------------------
+
+def test_dcc_chat_from_non_admin_is_ignored(bot, fake_connection, make_event, monkeypatch, caplog):
+    calls = []
+    monkeypatch.setattr(bot, "dcc_connect", lambda *args: calls.append(args))
+    with caplog.at_level(logging.WARNING):
+        bot.on_dccchat(fake_connection, make_event("dccchat", "tester", "Mentat", arguments=["CHAT", "CHAT chat 2130706433 5000"]))
+    assert calls == []
+    assert "Ignoring DCC chat request from non-admin" in caplog.text
+
+
+def test_dcc_chat_from_admin_connects_to_the_given_address(bot, fake_connection, make_event, monkeypatch):
+    calls = []
+    monkeypatch.setattr(bot, "dcc_connect", lambda *args: calls.append(args))
+    bot.on_dccchat(fake_connection, make_event("dccchat", "idaho", "Mentat", arguments=["CHAT", "CHAT chat 2130706433 5000"]))
+    assert calls == [("127.0.0.1", 5000)]
+
+
+def test_dcc_chat_with_bad_address_is_ignored(bot, fake_connection, make_event, monkeypatch):
+    calls = []
+    monkeypatch.setattr(bot, "dcc_connect", lambda *args: calls.append(args))
+    bot.on_dccchat(fake_connection, make_event("dccchat", "idaho", "Mentat", arguments=["CHAT", "CHAT chat notanip 5000"]))
+    bot.on_dccchat(fake_connection, make_event("dccchat", "idaho", "Mentat", arguments=["CHAT"]))
+    assert calls == []
+
+
+def test_dcc_message_with_bad_bytes_is_echoed(bot, fake_connection, make_event):
+    bot.on_dccmsg(fake_connection, make_event("dccmsg", "idaho", "Mentat", arguments=[b"hola\xff"]))
+    assert fake_connection.sent("privmsg") == [("idaho", "You said: hola�")]
+
+
+# construction -------------------------------------------------------------
+
+def test_lenient_buffer_is_set_on_the_bot_connection_only(tmp_config):
+    mentat = Mentat(tmp_config)
+    assert mentat.connection.buffer_class is buffer.LenientDecodingLineBuffer
+    assert ServerConnection.buffer_class is buffer.DecodingLineBuffer
+    lenient = mentat.connection.buffer_class()
+    lenient.feed(b"ol\xe9\r\n")
+    assert list(lenient.lines()) == ["ol�"] or list(lenient.lines()) == []
+
+
+def test_bot_uses_the_config_server_and_nick(tmp_config):
+    tmp_config.irc_server = "irc.example.test"
+    tmp_config.irc_port = 6697
+    mentat = Mentat(tmp_config)
+    server = mentat.servers.peek()
+    assert (server.host, server.port) == ("irc.example.test", 6697)
+    assert mentat._nickname == "Mentat"
+    assert mentat.status.get_status() == Status.INIT

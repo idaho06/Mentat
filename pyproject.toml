@@ -1,0 +1,22 @@
+# Tool configuration only. Dependencies live in requirements*.txt.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+markers = [
+    "real_server: needs a live IRC server (set MENTAT_TEST_IRC=host:port)",
+]
+timeout = 30
+log_level = "DEBUG"
+
+[tool.coverage.run]
+source = ["mentat"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.pylint.messages_control]
+# TODO comments are tracked on purpose; do not fail the lint job on them
+disable = ["fixme"]

@@ -15,7 +15,14 @@ from irc.strings import IRCFoldedCase
 class Config:  # pylint: disable=too-many-instance-attributes
     """Class for the configuration of the bot."""
 
-    def __init__(self, args: argparse.Namespace):
+    def __init__(
+        self,
+        args: argparse.Namespace,
+        configdir: str | None = None,
+        logdir: str | None = None,
+    ):
+        """``configdir`` and ``logdir`` default to the platform user dirs;
+        tests (or embedders) can point both at a temporary directory."""
         logging.debug("Entering Config class")
         # IRC settings (defaults; overridden by the config file and the
         # command line). Instance attributes, so two Config objects never
@@ -30,8 +37,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.irc_admin_password = ""
         self.irc_admin_users = set()
 
-        self.configdir = user_config_dir("mentat")
-        self.logdir = user_log_dir("mentat")
+        self.configdir = configdir if configdir is not None else user_config_dir("mentat")
+        self.logdir = logdir if logdir is not None else user_log_dir("mentat")
         self.start_time = datetime.now()
         self.configfile = f"{self.configdir}/mentat.conf"
         os.makedirs(self.configdir, exist_ok=True)

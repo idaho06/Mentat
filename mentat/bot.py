@@ -42,15 +42,16 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.logger = Logger(self.config)
         self.status = Status()  # first status is INIT
 
-        # ServerConnection.buffer_class.errors = "replace"
-        ServerConnection.buffer_class = buffer.LenientDecodingLineBuffer
-
         irc.bot.SingleServerIRCBot.__init__(
             self,
             [(self.config.irc_server, self.config.irc_port)],
             self.config.irc_nick,
             self.config.irc_realname,
         )
+        # Tolerate bad bytes from the server. Set on this connection only:
+        # connect() instantiates self.buffer_class, so an instance attribute
+        # is enough and other ServerConnections in the process are untouched.
+        self.connection.buffer_class = buffer.LenientDecodingLineBuffer
 
     def start(self):
         """Starts the bot."""
@@ -80,7 +81,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
         )
         if (
             event.arguments[0].startswith(
-                f"El nick está registrado, tienes que indicar la contraseña para usarlo: /nick {connection.get_nickname()}:contraseña"
+                "El nick está registrado, tienes que indicar la contraseña "
+                f"para usarlo: /nick {connection.get_nickname()}:contraseña"
             )
             and self.status.get_status() != Status.CONNECTING_AUTHENTICATING
         ):

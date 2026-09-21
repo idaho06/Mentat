@@ -1,0 +1,17 @@
+# IRC server for the opt-in real-server test suite. Usage:
+#   docker compose -f docker-compose.test.yml up -d
+#   MENTAT_TEST_IRC=127.0.0.1:6667 pytest -m real_server -v
+#   docker compose -f docker-compose.test.yml down
+services:
+  ngircd:
+    image: lscr.io/linuxserver/ngircd:latest
+    container_name: mentat-test-ngircd
+    environment:
+      # the image chowns /config to this uid/gid; match your host user
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - "127.0.0.1:6667:6667"
+    volumes:
+      - ./tests/real_server/ngircd:/config
