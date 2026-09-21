@@ -9,6 +9,7 @@ from mentat.commands.hola import hola
 from mentat.commands.join import join
 from mentat.commands.login import login
 from mentat.commands.morir import morir
+from mentat.commands.observa import observa
 from mentat.commands.op import op
 from mentat.commands.part import part
 
@@ -205,3 +206,57 @@ def test_morir_disconnects_and_exits(fake_connection, tmp_config, make_event):
     with pytest.raises(SystemExit):
         morir(fake_connection, make_event("privmsg", ADMIN, "Mentat"), [], tmp_config)
     assert fake_connection.sent("disconnect") == [("Ouch!!",)]
+
+
+# observa --------------------------------------------------------------------
+
+def test_observa_requires_admin(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", "tester", "Mentat"), ["pon", "bob"], tmp_config)
+    assert fake_connection.calls == []
+    assert tmp_config.observa_nicks == []
+
+
+def test_observa_pon_adds_the_nick_and_sends_watch(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["pon", "bob"], tmp_config)
+    assert tmp_config.observa_nicks == ["bob"]
+    assert fake_connection.sent("send_raw") == [("WATCH +bob",)]
+
+
+def test_observa_pon_missing_nick_shows_usage(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["pon"], tmp_config)
+    assert fake_connection.privmsgs(ADMIN)[0].startswith("usage: observa pon")
+    assert fake_connection.sent("send_raw") == []
+
+
+def test_observa_pon_refuses_past_the_cap_and_replies(fake_connection, tmp_config, make_event):
+    for i in range(30):
+        observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["pon", f"n{i}"], tmp_config)
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["pon", "one-too-many"], tmp_config)
+    assert len(tmp_config.observa_nicks) == 30
+    assert "one-too-many" not in tmp_config.observa_nicks
+    assert ("WATCH +one-too-many",) not in fake_connection.sent("send_raw")
+    assert "30" in fake_connection.privmsgs(ADMIN)[-1]
+
+
+def test_observa_quita_removes_the_nick_and_unwatches(fake_connection, tmp_config, make_event):
+    tmp_config.add_watched_nick("bob")
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["quita", "bob"], tmp_config)
+    assert tmp_config.observa_nicks == []
+    assert ("WATCH -bob",) in fake_connection.sent("send_raw")
+
+
+def test_observa_quita_of_an_absent_nick_still_sends_watch_minus(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["quita", "nosuchnick"], tmp_config)
+    assert fake_connection.sent("send_raw") == [("WATCH -nosuchnick",)]
+
+
+def test_observa_quita_missing_nick_shows_usage(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["quita"], tmp_config)
+    assert fake_connection.privmsgs(ADMIN)[0].startswith("usage: observa quita")
+    assert fake_connection.sent("send_raw") == []
+
+
+def test_observa_unknown_subcommand_replies_an_error(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["nope"], tmp_config)
+    assert fake_connection.privmsgs(ADMIN) == ["Subcomando desconocido: nope"]
+    assert fake_connection.sent("send_raw") == []

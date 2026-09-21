@@ -14,6 +14,7 @@ from mentat.commands.join import join
 from mentat.commands.part import part
 from mentat.commands.estado import estado
 from mentat.commands.op import op
+from mentat.commands.observa import observa
 from mentat.commands.common import BotArgumentParser, parse_or_reply, reply_target
 from mentat.config import Config
 from mentat.logger import Logger
@@ -30,6 +31,7 @@ COMMANDS = {
     "join": join,
     "part": part,
     "estado": estado,
+    "observa": observa,
 }
 
 

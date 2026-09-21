@@ -37,6 +37,9 @@ class FakeConnection:
     def disconnect(self, message: str = ""):
         self._record("disconnect", message)
 
+    def send_raw(self, string: str):
+        self._record("send_raw", string)
+
     def sent(self, method: str) -> list[tuple]:
         """Arguments of every recorded call to ``method``."""
         return [args for name, args in self.calls if name == method]
