@@ -53,6 +53,14 @@ class Mentat(irc.bot.SingleServerIRCBot):
         # is enough and other ServerConnections in the process are untouched.
         self.connection.buffer_class = buffer.LenientDecodingLineBuffer
 
+        # The library's own "quit" handler (priority -20, registered by
+        # SingleServerIRCBot.__init__ above) removes the quitting nick from
+        # self.channels before on_quit (priority -10) ever runs. Hook in
+        # ahead of it to record which channels the nick was still in.
+        self.connection.add_global_handler(
+            "quit", self._capture_quit_channels, -25
+        )
+
     def start(self):
         """Starts the bot."""
         logging.debug("Entering start function")
@@ -229,11 +237,24 @@ class Mentat(irc.bot.SingleServerIRCBot):
                       connection, event)
         self.logger.mode(event)
 
+    def _capture_quit_channels(self, connection: ServerConnection, event):
+        """Records which channels a quitting nick was in.
+
+        Runs before the library's own "quit" handler clears that nick
+        from self.channels, so on_quit still knows where to log it.
+        """
+        nick = event.source.nick
+        event.quit_channels = [
+            channel
+            for channel, info in self.channels.items()
+            if info.has_user(nick)
+        ]
+
     def on_quit(self, connection: ServerConnection, event):
         """Function to handle quit messages."""
         logging.debug("Entering on_quit function: c: %s, e: %s",
                       connection, event)
-        self.logger.quit(event)
+        self.logger.quit(event, getattr(event, "quit_channels", []))
 
     def do_command(self, event, cmd: str):
         """Function to handle commands."""

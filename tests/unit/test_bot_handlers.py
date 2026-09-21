@@ -1,8 +1,10 @@
 """Tests for the Mentat event handlers and command dispatch, offline."""
 
 import logging
+import os
 
 import pytest
+import irc.bot
 from irc.client import ServerConnection
 from jaraco.stream import buffer
 
@@ -172,14 +174,45 @@ def test_mode_umode_quit_join_part_action_nick_are_logged(bot, fake_connection, 
 
     bot.on_umode(fake_connection, make_event("umode", "Mentat", "Mentat", arguments=["+In"]))
     bot.on_nick(fake_connection, make_event("nick", "bob", "robert"))
-    bot.on_quit(fake_connection, make_event("quit", "robert", "*", "bye"))
     with open(f"{tmp_config.logdir}/mode_changes.log", encoding="utf-8") as handle:
         assert "*** Mentat sets mode: +In" in handle.read()
     with open(f"{tmp_config.logdir}/nick_changes.log", encoding="utf-8") as handle:
         assert "*** bob is now known as robert" in handle.read()
-    with open(f"{tmp_config.logdir}/nick_robert.log", encoding="utf-8") as handle:
-        assert "<<< robert has quit: bye" in handle.read()
     assert fake_connection.calls == []
+
+
+def test_capture_quit_channels_records_channels_before_the_library_clears_them(
+    bot, fake_connection, make_event
+):
+    channel = irc.bot.Channel()
+    channel.add_user("robert")
+    bot.channels["#mentat"] = channel
+    other = irc.bot.Channel()
+    other.add_user("someoneelse")
+    bot.channels["#other"] = other
+
+    event = make_event("quit", "robert", "*", "bye")
+    bot._capture_quit_channels(fake_connection, event)  # pylint: disable=protected-access
+    assert event.quit_channels == ["#mentat"]
+
+
+def test_on_quit_logs_to_the_channels_captured_on_the_event(
+    bot, fake_connection, make_event, tmp_config
+):
+    event = make_event("quit", "robert", "*", "bye")
+    event.quit_channels = ["#mentat", "#other"]
+    bot.on_quit(fake_connection, event)
+    assert "<<< robert has quit: bye" in channel_log(tmp_config)
+    assert "<<< robert has quit: bye" in channel_log(tmp_config, "other")
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_robert.log")
+
+
+def test_on_quit_without_captured_channels_writes_nothing(
+    bot, fake_connection, make_event, tmp_config
+):
+    bot.on_quit(fake_connection, make_event("quit", "robert", "*", "bye"))
+    assert not os.path.exists(f"{tmp_config.logdir}/channel_mentat.log")
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_robert.log")
 
 
 # DCC ----------------------------------------------------------------------
