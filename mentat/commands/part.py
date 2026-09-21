@@ -5,12 +5,7 @@
 import logging
 from irc.client import ServerConnection
 from mentat.config import Config
-from mentat.commands.common import (
-    BotArgumentParser,
-    parse_command_args,
-    reply_target,
-    send_lines,
-)
+from mentat.commands.common import BotArgumentParser, parse_or_reply, reply_target
 
 
 def part(connection: ServerConnection, event, args, config: Config):
@@ -42,9 +37,8 @@ def part(connection: ServerConnection, event, args, config: Config):
         default="Leaving"
     )
 
-    part_args, help_lines = parse_command_args(parser, args)
+    part_args = parse_or_reply(parser, args, connection, talk_to)
     if part_args is None:
-        send_lines(connection, talk_to, help_lines)
         return
 
     connection.part(part_args.channel, part_args.reason)

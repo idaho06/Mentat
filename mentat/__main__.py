@@ -9,14 +9,19 @@ import logging
 import argparse
 from mentat.config import Config
 from mentat.bot import Mentat
+from mentat.logger import SecretFilter
 
 
 def main(args: argparse.Namespace) -> int:
     """Main function for Mentat."""
     logging.debug("Entering Main function")
     logging.info("This is Mentat, an IRC bot.")
-    logging.debug("Args: %s", args)
     config = Config(args)
+    # on the handler, not the logger, so records propagated from the irc
+    # library (which logs every raw line at DEBUG) are redacted too
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(SecretFilter(config))
+    logging.debug("Args: %s", args)
     mentat = Mentat(config)
     if args.create_config_and_exit:
         return 0

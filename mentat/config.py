@@ -9,6 +9,7 @@ import logging
 import argparse
 from appdirs import user_config_dir, user_log_dir
 import irc.strings
+from irc.strings import IRCFoldedCase
 
 
 class Config:  # pylint: disable=too-many-instance-attributes
@@ -33,9 +34,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.logdir = user_log_dir("mentat")
         self.start_time = datetime.now()
         self.configfile = f"{self.configdir}/mentat.conf"
-        # checks if configdir exists, if not, creates it
-        if not os.path.exists(self.configdir):
-            os.makedirs(self.configdir)
+        os.makedirs(self.configdir, exist_ok=True)
         # if argument --reset is used, deletes configfile
         if args.reset and os.path.exists(self.configfile):
             os.remove(self.configfile)
@@ -50,10 +49,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
             # the command line overrides the stored values for this run
             self.load_configfile(self.configfile)
             self._apply_args(args)
-        # checks if logdir exists, if not, creates it (after the final
-        # value of logdir is known)
-        if not os.path.exists(self.logdir):
-            os.makedirs(self.logdir)
+        # after the final value of logdir is known
+        os.makedirs(self.logdir, exist_ok=True)
 
     def _apply_args(self, args: argparse.Namespace):
         """Applies the command line arguments that override the config."""
@@ -76,8 +73,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
 
     def has_channel(self, channel: str) -> bool:
         """Checks if a channel is in the channel list (case-insensitive)."""
-        wanted = irc.strings.lower(channel)
-        return any(irc.strings.lower(c) == wanted for c in self.irc_channels)
+        return IRCFoldedCase(channel) in self.irc_channels
 
     def add_channel(self, channel: str):
         """Adds a channel to the channel list, unless it is already there."""
@@ -92,10 +88,15 @@ class Config:  # pylint: disable=too-many-instance-attributes
         with a different case than the one we configured.
         """
         logging.debug("Entering remove_channel function. Channel: %s", channel)
-        unwanted = irc.strings.lower(channel)
-        self.irc_channels = [
-            c for c in self.irc_channels if irc.strings.lower(c) != unwanted
-        ]
+        if self.has_channel(channel):
+            self.irc_channels.remove(IRCFoldedCase(channel))
+
+    def redact(self, text: str) -> str:
+        """Replaces the configured passwords in ``text`` with asterisks."""
+        for secret in (self.irc_password, self.irc_admin_password):
+            if secret:
+                text = text.replace(secret, "******")
+        return text
 
     def create_configfile(self, configfile: str):
         """Creates the configuration file."""

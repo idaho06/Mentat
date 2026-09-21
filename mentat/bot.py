@@ -13,23 +13,24 @@ from mentat.commands.morir import morir
 from mentat.commands.join import join
 from mentat.commands.part import part
 from mentat.commands.estado import estado
-from mentat.commands.common import (
-    BotArgumentParser,
-    parse_command_args,
-    reply_target,
-    send_lines,
-)
+from mentat.commands.op import op
+from mentat.commands.common import BotArgumentParser, parse_or_reply, reply_target
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
 
-
-def _redact(text: str) -> str:
-    """Hide the secret in a "login <password>" command before logging it."""
-    words = text.split(maxsplit=1)
-    if words and irc.strings.lower(words[0]) == "login":
-        return "login ******"
-    return text
+# command name -> handler(connection, event, args, config)
+COMMANDS = {
+    "login": login,
+    "hola": hola,
+    "op": op,
+    "dados": dados,
+    "desconectar": desconectar,
+    "morir": morir,
+    "join": join,
+    "part": part,
+    "estado": estado,
+}
 
 
 class Mentat(irc.bot.SingleServerIRCBot):
@@ -57,6 +58,20 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.info("Starting bot.")
         self.status.transition("connect")
         irc.bot.SingleServerIRCBot.start(self)
+
+    def _dispatcher(self, connection: ServerConnection, event):
+        """Dispatches every IRC event to its on_<type> handler.
+
+        This is the irc library's single dispatch point and nothing above
+        it catches exceptions, so one bad event would end the whole
+        process. Handlers run on network input; anything unexpected is
+        logged and the bot keeps going. SystemExit (used by "morir") is not
+        an Exception and still propagates.
+        """
+        try:
+            super()._dispatcher(connection, event)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logging.exception("Handler for %s event failed: %s", event.type, event)
 
     def on_nicknameinuse(self, connection: ServerConnection, event):
         """Function to handle the nickname in use error."""
@@ -129,13 +144,10 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_privmsg(self, connection: ServerConnection, event):
         """Function to handle private messages."""
-        # the event is not logged as a whole: it may carry the admin password
-        text = event.arguments[0]
         logging.debug(
-            "Entering on_privmsg function: c: %s, from: %s, text: %s",
-            connection, event.source, _redact(text))
-        self.logger.privmsg(event, _redact(text))
-        self.do_command(event, text)
+            "Entering on_privmsg function: c: %s, e: %s", connection, event)
+        self.logger.privmsg(event)
+        self.do_command(event, event.arguments[0])
 
     def on_join(self, connection: ServerConnection, event):
         """Function to handle join messages."""
@@ -202,7 +214,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_nick function: c: %s, e: %s",
                       connection, event)
         self.logger.nick(event)
-    
+
     def on_umode(self, connection: ServerConnection, event):
         """Function to handle user modes."""
         logging.debug("Entering on_umode function: c: %s, e: %s",
@@ -224,10 +236,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
     def do_command(self, event, cmd: str):
         """Function to handle commands."""
         logging.debug(
-            "Entering do_command function: type: %s, from: %s, cmd: %s",
-            event.type, event.source, _redact(cmd))
+            "Entering do_command function: e: %s, cmd: %s", event, cmd)
         talk_to = reply_target(event)
-
         connection = self.connection
 
         parser = BotArgumentParser(
@@ -235,74 +245,17 @@ class Mentat(irc.bot.SingleServerIRCBot):
             prog="Mentat:",
             epilog="Add --help after the command to get help about the command",
         )
-
-        parser.add_argument(
-            "cmd", 
-            choices=["login", "hola", "op", "dados", "desconectar", "morir", "join", "part", "estado"], 
-            help="Command to execute"
-        )
+        parser.add_argument("cmd", choices=list(COMMANDS), help="Command to execute")
 
         cmd_list = cmd.split()
-
-        parsed, help_lines = parse_command_args(parser, cmd_list[:1])
+        parsed = parse_or_reply(parser, cmd_list[:1], connection, talk_to)
         if parsed is None:
-            send_lines(connection, talk_to, help_lines)
             return
 
-        # The irc library does not catch exceptions raised by event
-        # handlers: one would end the whole process. Commands run on user
-        # input, so anything unexpected is logged and reported instead.
-        # SystemExit (used by "morir") is not an Exception and still propagates.
+        logging.debug("Command: %s", parsed.cmd)
         try:
-            self._run_command(parsed.cmd, event, cmd_list)
-        except Exception:  # pylint: disable=broad-exception-caught
-            logging.exception("Command %r failed", _redact(cmd))
+            COMMANDS[parsed.cmd](connection, event, cmd_list[1:], self.config)
+        except Exception:
+            # tell the user; _dispatcher logs the traceback
             connection.privmsg(talk_to, "Error ejecutando el comando")
-
-    def _run_command(self, command: str, event, cmd_list: list):
-        """Runs the already validated ``command`` with its arguments."""
-        nick = event.source.nick
-        talk_to = reply_target(event)
-        connection = self.connection
-
-        if command == "hola":
-            logging.debug("Command: hola")
-            hola(connection, event, cmd_list[1:])
-            # connection.privmsg(talk_to, "Hola, " + nick)
-        elif command == "login":
-            logging.debug("Command: login")
-            login(connection, event, cmd_list[1:], self.config)
-        elif command == "op":
-            if not self.config.is_admin(nick):
-                return
-            logging.debug("Command: op")
-            if len(cmd_list) > 1 and len(cmd_list) < 4:
-                nick_to_op = cmd_list[1]
-                channel = ""
-                try:
-                    channel = cmd_list[2]
-                except IndexError:
-                    channel = talk_to
-                logging.debug("Channel: %s, Nick to op: %s",
-                              channel, nick_to_op)
-                connection.mode(channel, f"+o {nick_to_op}")
-            elif len(cmd_list) == 1 and event.type != "privmsg":
-                connection.mode(talk_to, f"+o {nick}")
-        elif command == "dados":
-            logging.debug("Command: dados")
-            dados(connection, event, cmd_list[1:])
-        elif command == "desconectar":
-            logging.debug("Command: desconectar")
-            desconectar(connection, event, cmd_list[1:], self.config)
-        elif command == "morir":
-            logging.debug("Command: morir")
-            morir(connection, event, cmd_list[1:], self.config)
-        elif command == "join":
-            logging.debug("Command: join")
-            join(connection, event, cmd_list[1:], self.config)
-        elif command == "part":
-            logging.debug("Command: part")
-            part(connection, event, cmd_list[1:], self.config)
-        elif command == "estado":
-            logging.debug("Command: estado")
-            estado(connection, event, cmd_list[1:], self.config)
+            raise

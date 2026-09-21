@@ -5,12 +5,7 @@
 import logging
 from irc.client import ServerConnection
 from mentat.config import Config
-from mentat.commands.common import (
-    BotArgumentParser,
-    parse_command_args,
-    reply_target,
-    send_lines,
-)
+from mentat.commands.common import BotArgumentParser, parse_or_reply, reply_target
 
 
 def join(connection: ServerConnection, event, args, config: Config):
@@ -35,9 +30,8 @@ def join(connection: ServerConnection, event, args, config: Config):
         help="Channel to join"
     )
 
-    join_args, help_lines = parse_command_args(parser, args)
+    join_args = parse_or_reply(parser, args, connection, talk_to)
     if join_args is None:
-        send_lines(connection, talk_to, help_lines)
         return
 
     connection.join(join_args.channel)

@@ -24,7 +24,6 @@ class Status:
             INIT: CONNECTING,
         },
         "authenticate": {
-            INIT: CONNECTING_AUTHENTICATING,
             CONNECTING: CONNECTING_AUTHENTICATING,
         },
         "connected": {
@@ -36,7 +35,6 @@ class Status:
         # (without going through Mentat.start), so a disconnect means
         # "connecting again", whatever the previous status was.
         "disconnect": {
-            INIT: CONNECTING,
             CONNECTING: CONNECTING,
             CONNECTING_AUTHENTICATING: CONNECTING,
             CONNECTED: CONNECTING,

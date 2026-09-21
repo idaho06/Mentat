@@ -9,12 +9,8 @@ import logging
 from datetime import datetime
 from irc.client import ServerConnection
 from mentat.config import Config
-from mentat.commands.common import (
-    BotArgumentParser,
-    parse_command_args,
-    reply_target,
-    send_lines,
-)
+from mentat.commands.common import BotArgumentParser, parse_or_reply, reply_target
+
 
 def estado(connection: ServerConnection, event, args, config: Config):
     """Function to handle the estado command."""
@@ -32,9 +28,7 @@ def estado(connection: ServerConnection, event, args, config: Config):
         prog="estado",
     )
 
-    _estado_args, help_lines = parse_command_args(parser, args)
-    if _estado_args is None:
-        send_lines(connection, talk_to, help_lines)
+    if parse_or_reply(parser, args, connection, talk_to) is None:
         return
 
     uptime = datetime.now() - config.start_time

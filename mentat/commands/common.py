@@ -21,11 +21,12 @@ class BotArgumentParser(argparse.ArgumentParser):
     """ArgumentParser that never exits and never writes to stdout/stderr.
 
     Everything argparse would print (help, usage, errors) is collected in
-    ``self.output`` as a list of text blocks.
+    ``self.output`` as a list of text blocks. argparse funnels every error
+    through ``error()`` -> ``print_usage()`` + ``exit()``, so overriding the
+    printing and exiting hooks is enough.
     """
 
     def __init__(self, *args, **kwargs):
-        kwargs["exit_on_error"] = False
         super().__init__(*args, **kwargs)
         self.output: list[str] = []
 
@@ -40,38 +41,28 @@ class BotArgumentParser(argparse.ArgumentParser):
             self.output.append(message)
         raise _ParserExit()
 
-    def error(self, message):
-        self.output.append(self.format_usage())
-        self.output.append(f"{self.prog}: error: {message}")
-        raise _ParserExit()
 
+def parse_or_reply(
+    parser: BotArgumentParser, args: list, connection: ServerConnection, target: str
+) -> argparse.Namespace | None:
+    """Parse ``args`` with ``parser``; on any problem answer the user.
 
-def parse_command_args(
-    parser: BotArgumentParser, args: list
-) -> tuple[argparse.Namespace | None, list[str]]:
-    """Parse ``args`` with ``parser`` without ever raising or exiting.
-
-    Returns ``(namespace, [])`` on success, or ``(None, lines)`` where
-    ``lines`` is the help/usage/error text to send back to the user.
+    Returns the namespace on success. Otherwise the help/usage/error text
+    is sent to ``target`` and None is returned, so the caller just returns.
     """
-    namespace = None
     try:
-        namespace = parser.parse_args(args)
+        return parser.parse_args(args)
     except _ParserExit:
-        pass
-    except argparse.ArgumentError as exc:
-        parser.output.append(parser.format_usage())
-        parser.output.append(f"{parser.prog}: error: {exc}")
-    lines = [
-        line
-        for block in parser.output
-        for line in block.splitlines()
-        if line.strip()
-    ]
-    if lines:
+        lines = [
+            line
+            for block in parser.output
+            for line in block.splitlines()
+            if line.strip()
+        ]
         logging.debug("Help text: %s", lines)
-        return None, lines
-    return namespace, []
+        for line in lines:
+            connection.privmsg(target, line)
+        return None
 
 
 def reply_target(event) -> str:
@@ -79,9 +70,3 @@ def reply_target(event) -> str:
     if event.type == "privmsg":
         return event.source.nick
     return event.target
-
-
-def send_lines(connection: ServerConnection, target: str, lines: list):
-    """Send each line as a separate PRIVMSG."""
-    for line in lines:
-        connection.privmsg(target, line)
