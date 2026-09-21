@@ -30,31 +30,37 @@ class Config(object):
         self.configdir = user_config_dir("mentat")
         self.logdir = user_log_dir("mentat")
         self.start_time = datetime.now()
-        if args.logdir:
-            self.logdir = args.logdir
         self.configfile = f"{self.configdir}/mentat.conf"
         # checks if configdir exists, if not, creates it
         if not os.path.exists(self.configdir):
             os.makedirs(self.configdir)
-        # checks if logdir exists, if not, creates it
-        if not os.path.exists(self.logdir):
-            os.makedirs(self.logdir)
         # if argument --reset is used, deletes configfile
         if args.reset and os.path.exists(self.configfile):
             os.remove(self.configfile)
             logging.info("Configuration file deleted.")
-        # if argument --password is used, sets irc_password
+        self.irc_admin_users.add("idaho")  # Idaho is always admin
+        # checks if configfile exists, if not, creates it
+        if not os.path.exists(self.configfile):
+            # the command line values are stored in the new config file
+            self._apply_args(args)
+            self.create_configfile(self.configfile)
+        else:
+            # the command line overrides the stored values for this run
+            self.load_configfile(self.configfile)
+            self._apply_args(args)
+        # checks if logdir exists, if not, creates it (after the final
+        # value of logdir is known)
+        if not os.path.exists(self.logdir):
+            os.makedirs(self.logdir)
+
+    def _apply_args(self, args: argparse.Namespace):
+        """Applies the command line arguments that override the config."""
         if args.password:
             self.irc_password = args.password
         if args.admin_password:
             self.irc_admin_password = args.admin_password
-        self.irc_admin_users.add("idaho")  # Idaho is always admin
-        # checks if configfile exists, if not, creates it
-        if not os.path.exists(self.configfile):
-            # open(self.configfile, "a").close()
-            self.create_configfile(self.configfile)
-        else:
-            self.load_configfile(self.configfile)
+        if args.logdir:
+            self.logdir = args.logdir
 
     def set_admin(self, admin: str):
         """Adds an admin to the admin list."""
