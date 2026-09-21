@@ -3,6 +3,7 @@ The class stores the initial configuration of the bot and controls the configura
 
 
 from datetime import datetime
+import re
 import shelve
 import os
 import logging
@@ -129,6 +130,20 @@ class Config:  # pylint: disable=too-many-instance-attributes
         if self.has_watched_nick(nick):
             self.observa_nicks.remove(IRCFoldedCase(nick))
             self.create_configfile(self.configfile)
+
+    def nicks_mentioned_in(self, text: str) -> list:
+        """Watched nicks mentioned by name in ``text``.
+
+        Matches case-insensitively on a word boundary (so "Qetu:" or "hey
+        QETU" match but "asqetuas" doesn't); relies on Python's regex \\b,
+        which assumes the nick starts/ends with a word character — a nick
+        with a leading/trailing symbol (e.g. "[bot]") wouldn't match
+        reliably, not a concern for the currently configured nicks.
+        """
+        return [
+            nick for nick in self.observa_nicks
+            if re.search(r"\b" + re.escape(nick) + r"\b", text, re.IGNORECASE)
+        ]
 
     def mark_watched_nick_online(self, nick: str):
         """Records a watched nick as currently connected."""

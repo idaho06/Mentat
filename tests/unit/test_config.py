@@ -2,6 +2,8 @@
 
 import os
 
+import pytest
+
 from mentat.config import Config
 
 
@@ -188,3 +190,19 @@ def test_watched_nicks_online_is_never_persisted(tmp_path, cli_args):
     config.mark_watched_nick_online("bob")
     reloaded = make(tmp_path, cli_args)
     assert not reloaded.is_watched_nick_online("bob")
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("hey QETU, how are you", ["Qetu"]),
+        ("asqetuas is not a mention", []),
+        ("Qetu: hello!", ["Qetu"]),
+        ("Qetu Qetu and Shula are here", ["Qetu", "Shula"]),
+        ("nothing to see here", []),
+    ],
+)
+def test_nicks_mentioned_in(tmp_config, text, expected):
+    tmp_config.add_watched_nick("Qetu")
+    tmp_config.add_watched_nick("Shula")
+    assert tmp_config.nicks_mentioned_in(text) == expected

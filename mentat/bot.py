@@ -1,7 +1,6 @@
 """Bot module for Mentat. This module contains the class for the bot."""
 
 import logging
-import re
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
@@ -155,8 +154,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.logger.pubmsg(event)
         if self.config.has_watched_nick(event.source.nick):
             self.logger.watched_pubmsg(event)
-        for nick in self._mentioned_watched_nicks(event.arguments[0], event.source.nick):
-            self.logger.watched_mention(event, nick)
+        self._log_mentions(event, event.arguments[0])
         subject = event.arguments[0].split(":", 1)
         if len(subject) > 1 and irc.strings.lower(subject[0]) == irc.strings.lower(
             self.connection.get_nickname()
@@ -221,8 +219,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.logger.action(event)
         if self.config.has_watched_nick(event.source.nick):
             self.logger.watched_action(event)
-        for nick in self._mentioned_watched_nicks(event.arguments[0], event.source.nick):
-            self.logger.watched_mention(event, nick)
+        self._log_mentions(event, event.arguments[0])
 
     def on_kick(self, connection: ServerConnection, event):
         """Function to handle kicks."""
@@ -309,22 +306,16 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.config.mark_watched_nick_offline(nick)
         self.logger.watched_disconnect(event)
 
-    def _mentioned_watched_nicks(self, text: str, exclude_nick: str) -> list:
-        """Watched nicks mentioned by name in ``text``, excluding ``exclude_nick``.
+    def _log_mentions(self, event, text: str):
+        """Logs a mention for every watched nick named in ``text``.
 
-        Matches case-insensitively on a word boundary (so "Qetu:" or "hey
-        QETU" match but "asqetuas" doesn't); relies on Python's regex \\b,
-        which assumes the nick starts/ends with a word character — a nick
-        with a leading/trailing symbol (e.g. "[bot]") wouldn't match
-        reliably, not a concern for the currently configured nicks.
+        Excludes the message's own sender: their own mentions of themself
+        are already covered by the dot marker from watched_pubmsg/action.
         """
-        mentioned = []
-        for nick in self.config.observa_nicks:
-            if irc.strings.lower(nick) == irc.strings.lower(exclude_nick):
-                continue
-            if re.search(r"\b" + re.escape(nick) + r"\b", text, re.IGNORECASE):
-                mentioned.append(nick)
-        return mentioned
+        sender = event.source.nick
+        for nick in self.config.nicks_mentioned_in(text):
+            if irc.strings.lower(nick) != irc.strings.lower(sender):
+                self.logger.watched_mention(event, nick)
 
     def _capture_quit_channels(self, connection: ServerConnection, event):
         """Records which channels a quitting nick was in.

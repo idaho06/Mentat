@@ -389,42 +389,12 @@ def test_capture_quit_channels_records_channels_before_the_library_clears_them(
 
 # mention detection ----------------------------------------------------------
 
-def test_mentioned_watched_nicks_matches_case_insensitively(bot, tmp_config):
+def test_log_mentions_excludes_the_sender_case_insensitively(bot, fake_connection, make_event, tmp_config):
     tmp_config.add_watched_nick("Qetu")
+    event = make_event("pubmsg", "QETU", "#madrid", "I am qetu")
     # pylint: disable=protected-access
-    assert bot._mentioned_watched_nicks("hey QETU, how are you", "Peter") == ["Qetu"]
-
-
-def test_mentioned_watched_nicks_requires_a_word_boundary(bot, tmp_config):
-    tmp_config.add_watched_nick("Qetu")
-    # pylint: disable=protected-access
-    assert bot._mentioned_watched_nicks("asqetuas is not a mention", "Peter") == []
-
-
-def test_mentioned_watched_nicks_matches_with_trailing_punctuation(bot, tmp_config):
-    tmp_config.add_watched_nick("Qetu")
-    # pylint: disable=protected-access
-    assert bot._mentioned_watched_nicks("Qetu: hello!", "Peter") == ["Qetu"]
-
-
-def test_mentioned_watched_nicks_excludes_the_given_nick_case_insensitively(bot, tmp_config):
-    tmp_config.add_watched_nick("Qetu")
-    # pylint: disable=protected-access
-    assert bot._mentioned_watched_nicks("I am qetu", "Qetu") == []
-    assert bot._mentioned_watched_nicks("I am qetu", "QETU") == []
-
-
-def test_mentioned_watched_nicks_returns_each_distinct_nick_once(bot, tmp_config):
-    tmp_config.add_watched_nick("Qetu")
-    tmp_config.add_watched_nick("Shula")
-    # pylint: disable=protected-access
-    assert bot._mentioned_watched_nicks("Qetu Qetu and Shula are here", "Peter") == ["Qetu", "Shula"]
-
-
-def test_mentioned_watched_nicks_with_no_mention_returns_empty(bot, tmp_config):
-    tmp_config.add_watched_nick("Qetu")
-    # pylint: disable=protected-access
-    assert bot._mentioned_watched_nicks("nothing to see here", "Peter") == []
+    bot._log_mentions(event, event.arguments[0])
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_Qetu.log")
 
 
 def test_on_quit_logs_to_the_channels_captured_on_the_event(
