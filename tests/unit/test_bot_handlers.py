@@ -113,6 +113,13 @@ def test_action_from_a_non_watched_nick_does_not_touch_its_nick_file(bot, fake_c
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
+def test_action_mentioning_a_watched_nick_logs_a_mention(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    bot.on_action(fake_connection, make_event("action", "Peter", "#madrid", "hugs Qetu"))
+    with open(f"{tmp_config.logdir}/nick_Qetu.log", encoding="utf-8") as handle:
+        assert "Peter mentioned Qetu in #madrid" in handle.read()
+
+
 def test_kick_logs_to_the_kicked_watched_nicks_file(bot, fake_connection, make_event, tmp_config):
     tmp_config.add_watched_nick("bob")
     bot.on_kick(fake_connection, make_event("kick", "tester", "#mentat", arguments=["bob", "bye"]))

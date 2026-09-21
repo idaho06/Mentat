@@ -221,6 +221,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.logger.action(event)
         if self.config.has_watched_nick(event.source.nick):
             self.logger.watched_action(event)
+        for nick in self._mentioned_watched_nicks(event.arguments[0], event.source.nick):
+            self.logger.watched_mention(event, nick)
 
     def on_kick(self, connection: ServerConnection, event):
         """Function to handle kicks."""
