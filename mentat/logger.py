@@ -149,10 +149,13 @@ class Logger:
             self._channel_file(event.target), f"*** {nick} sets mode: {action}"
         )
 
-    def quit(self, event):
-        """Stores quit messages."""
+    def quit(self, event, channels):
+        """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)
         nick = event.source.nick
         reason = event.arguments[0] if event.arguments else ""
         logging.info("User: %s | Quit message: %s", nick, reason)
-        self._append(f"nick_{nick}.log", f"<<< {nick} has quit: {reason}")
+        for channel in channels:
+            self._append(
+                self._channel_file(channel), f"<<< {nick} has quit: {reason}"
+            )

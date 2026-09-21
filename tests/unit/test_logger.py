@@ -1,6 +1,7 @@
 """Tests for the file Logger and the SecretFilter."""
 
 import logging
+import os
 import re
 
 import pytest
@@ -111,9 +112,20 @@ def test_channel_mode_joins_all_arguments(file_logger, tmp_config, make_event):
 
 
 def test_quit_with_and_without_reason(file_logger, tmp_config, make_event):
-    file_logger.quit(make_event("quit", "tester", "*", "bye"))
-    file_logger.quit(make_event("quit", "tester", "*"))
-    assert read(tmp_config, "nick_tester.log") == [
+    file_logger.quit(make_event("quit", "tester", "*", "bye"), ["#mentat"])
+    file_logger.quit(make_event("quit", "tester", "*"), ["#mentat"])
+    assert read(tmp_config, "channel_mentat.log") == [
         "<<< tester has quit: bye",
         "<<< tester has quit: ",
     ]
+
+
+def test_quit_is_logged_to_every_channel_the_nick_was_in(file_logger, tmp_config, make_event):
+    file_logger.quit(make_event("quit", "tester", "*", "bye"), ["#mentat", "#other"])
+    assert read(tmp_config, "channel_mentat.log") == ["<<< tester has quit: bye"]
+    assert read(tmp_config, "channel_other.log") == ["<<< tester has quit: bye"]
+
+
+def test_quit_with_no_channels_writes_nothing(file_logger, tmp_config, make_event):
+    file_logger.quit(make_event("quit", "tester", "*", "bye"), [])
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
