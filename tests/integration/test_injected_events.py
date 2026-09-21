@@ -81,3 +81,29 @@ def test_quit_of_a_user_in_no_known_channels_writes_nothing(driver, bot_config):
     driver.inject_line(":bob!bob@localhost QUIT :gone fishing")
     assert not os.path.exists(f"{bot_config.logdir}/nick_bob.log")
     assert "bob" not in channel_log(bot_config)
+
+
+def test_away_notify_is_logged_for_a_watched_nick(driver, live_bot, bot_config):
+    bot_config.add_watched_nick("bob")
+    driver.connect_and_join("#mentat")
+    driver.inject_line(":bob!bob@localhost AWAY :gone fishing")
+    driver.inject_line(":bob!bob@localhost AWAY")
+    with open(f"{bot_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        content = handle.read()
+    assert "bob is away: gone fishing" in content
+    assert "bob is back" in content
+
+
+def test_rpl_away_301_is_not_confused_with_away_notify(driver, live_bot, bot_config):
+    bot_config.add_watched_nick("bob")
+    driver.connect_and_join("#mentat")
+    driver.inject_line(":localhost 301 Mentat bob :gone fishing")
+    assert not os.path.exists(f"{bot_config.logdir}/nick_bob.log")
+
+
+def test_chghost_is_logged_for_a_watched_nick(driver, live_bot, bot_config):
+    bot_config.add_watched_nick("bob")
+    driver.connect_and_join("#mentat")
+    driver.inject_line(":bob!bob@localhost CHGHOST newident newhost")
+    with open(f"{bot_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        assert "newident@newhost" in handle.read()

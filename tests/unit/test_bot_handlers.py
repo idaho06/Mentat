@@ -128,6 +128,40 @@ def test_nick_change_of_a_non_watched_nick_touches_no_nick_file(bot, fake_connec
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
+def test_on_away_logs_away_notify_for_a_watched_nick(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    bot.on_away(fake_connection, make_event("away", "bob", "gone fishing"))
+    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        assert "bob is away: gone fishing" in handle.read()
+
+
+def test_on_away_ignores_rpl_301_which_carries_arguments(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    # RPL_301: source is the server, target is the bot's own nick, and the
+    # away nick + reason land in arguments -- this must not be logged as if
+    # bob had gone away via away-notify.
+    event = make_event("away", "localhost", "Mentat", arguments=["bob", "gone fishing"])
+    bot.on_away(fake_connection, event)
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_bob.log")
+
+
+def test_on_away_for_a_non_watched_nick_touches_no_nick_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_away(fake_connection, make_event("away", "tester", "gone fishing"))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
+
+
+def test_on_chghost_logs_for_a_watched_nick(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    bot.on_chghost(fake_connection, make_event("chghost", "bob", "newident", arguments=["newhost"]))
+    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        assert "bob changed host to newident@newhost" in handle.read()
+
+
+def test_on_chghost_for_a_non_watched_nick_touches_no_nick_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_chghost(fake_connection, make_event("chghost", "tester", "newident", arguments=["newhost"]))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
+
+
 def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
     bot.on_privmsg(fake_connection, make_event("privmsg", "tester", "Mentat", "hola -n Bob"))
     assert fake_connection.sent("privmsg") == [("tester", "Hola, Bob")]

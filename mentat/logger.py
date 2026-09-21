@@ -212,6 +212,23 @@ class Logger:
             f"*** {event.source.nick} is now known as {event.target}",
         )
 
+    def watched_away(self, event):
+        """Stores an away-notify status change for a watched nick."""
+        nick = event.source.nick
+        if event.target:
+            self._append(f"nick_{nick}.log", f"*** {nick} is away: {event.target}")
+        else:
+            self._append(f"nick_{nick}.log", f"*** {nick} is back")
+
+    def watched_chghost(self, event):
+        """Stores a host change (CHGHOST) for a watched nick."""
+        nick = event.source.nick
+        new_ident = event.target
+        new_host = event.arguments[0] if event.arguments else ""
+        self._append(
+            f"nick_{nick}.log", f"*** {nick} changed host to {new_ident}@{new_host}"
+        )
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)

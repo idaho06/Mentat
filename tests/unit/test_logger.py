@@ -175,6 +175,24 @@ def test_watched_nick_change(file_logger, tmp_config, make_event):
     assert read(tmp_config, "nick_bob.log") == ["*** bob is now known as newbob"]
 
 
+def test_watched_away_with_reason(file_logger, tmp_config, make_event):
+    event = make_event("away", "bob", "gone fishing")
+    file_logger.watched_away(event)
+    assert read(tmp_config, "nick_bob.log") == ["*** bob is away: gone fishing"]
+
+
+def test_watched_away_coming_back(file_logger, tmp_config, make_event):
+    event = make_event("away", "bob", None)
+    file_logger.watched_away(event)
+    assert read(tmp_config, "nick_bob.log") == ["*** bob is back"]
+
+
+def test_watched_chghost(file_logger, tmp_config, make_event):
+    event = make_event("chghost", "bob", "newident", arguments=["newhost"])
+    file_logger.watched_chghost(event)
+    assert read(tmp_config, "nick_bob.log") == ["*** bob changed host to newident@newhost"]
+
+
 def test_watched_pubmsg_and_privmsg_share_the_same_file(file_logger, tmp_config, make_event):
     file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "hi"))
     file_logger.privmsg(make_event("privmsg", "bob", "Mentat", "hola"))

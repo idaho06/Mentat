@@ -258,6 +258,24 @@ class Mentat(irc.bot.SingleServerIRCBot):
             if self.config.has_watched_nick(nick):
                 self.logger.watched_mode(event, nick)
 
+    def on_away(self, connection: ServerConnection, event):
+        """Function to handle away-notify status changes.
+
+        RPL_AWAY (numeric 301, a reply to messaging an away user) is also
+        named "away" by the irc library, but always carries arguments (the
+        away nick and reason); real away-notify never does. Only the latter
+        is a real watched-nick status change worth logging.
+        """
+        if event.arguments:
+            return
+        if self.config.has_watched_nick(event.source.nick):
+            self.logger.watched_away(event)
+
+    def on_chghost(self, connection: ServerConnection, event):
+        """Function to handle CHGHOST (host change) for a watched nick."""
+        if self.config.has_watched_nick(event.source.nick):
+            self.logger.watched_chghost(event)
+
     def _capture_quit_channels(self, connection: ServerConnection, event):
         """Records which channels a quitting nick was in.
 
