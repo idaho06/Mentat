@@ -52,6 +52,37 @@ class Logger:
         """Log file name for a channel."""
         return channel.replace("#", "channel_") + ".log"
 
+    @staticmethod
+    def _format_join_part(event) -> str:
+        action = event.type
+        tag = '==='
+        if action == 'join':
+            tag = '==>'
+        elif action == 'part':
+            tag = '<=='
+        return f"{tag} {event.source.nick} {action}ed the channel"
+
+    @staticmethod
+    def _format_action(event) -> str:
+        return f"-*- {event.source.nick} {event.arguments[0]}"
+
+    @staticmethod
+    def _format_kick(event) -> str:
+        kicked = event.arguments[0]
+        reason = event.arguments[1] if len(event.arguments) > 1 else ''
+        return f"<=* {event.source.nick} has kicked {kicked}: {reason}"
+
+    @staticmethod
+    def _format_mode(event) -> str:
+        nick = event.source.nick if event.source else "unknown"
+        # the mode string plus its parameters, e.g. "+o idaho"
+        action = " ".join(event.arguments)
+        return f"*** {nick} sets mode: {action}"
+
+    @staticmethod
+    def _format_nick_change(event) -> str:
+        return f"*** {event.source.nick} is now known as {event.target}"
+
     def pubmsg(self, event):
         """Stores messages from the channels."""
         logging.debug("Entering pubmsg function: e: %s", event)
@@ -75,16 +106,7 @@ class Logger:
             event.source.nick,
             event.type,
         )
-        action = event.type
-        tag = '==='
-        if action == 'join':
-            tag = '==>'
-        elif action == 'part':
-            tag = '<=='
-        self._append(
-            self._channel_file(event.target),
-            f"{tag} {event.source.nick} {action}ed the channel",
-        )
+        self._append(self._channel_file(event.target), self._format_join_part(event))
 
     def privmsg(self, event):
         """Stores messages from private messages."""
@@ -102,10 +124,7 @@ class Logger:
             event.source.nick,
             event.arguments[0],
         )
-        self._append(
-            self._channel_file(event.target),
-            f"-*- {event.source.nick} {event.arguments[0]}",
-        )
+        self._append(self._channel_file(event.target), self._format_action(event))
 
     def kick(self, event):
         """Stores kick messages from the channels."""
@@ -116,12 +135,7 @@ class Logger:
             event.source.nick,
             event.arguments[0],
         )
-        kicked = event.arguments[0]
-        reason = event.arguments[1] if len(event.arguments) > 1 else ''
-        self._append(
-            self._channel_file(event.target),
-            f"<=* {event.source.nick} has kicked {kicked}: {reason}",
-        )
+        self._append(self._channel_file(event.target), self._format_kick(event))
 
     def nick(self, event):
         """Stores nick changes."""
@@ -131,10 +145,7 @@ class Logger:
             event.source.nick,
             event.target,
         )
-        self._append(
-            "nick_changes.log",
-            f"*** {event.source.nick} is now known as {event.target}",
-        )
+        self._append("nick_changes.log", self._format_nick_change(event))
 
     def umode(self, event):
         """Stores self (user) mode changes."""
@@ -148,12 +159,11 @@ class Logger:
         """Stores channel mode changes."""
         logging.debug("Entering mode function: e: %s", event)
         nick = event.source.nick if event.source else "unknown"
-        # the mode string plus its parameters, e.g. "+o idaho"
-        action = " ".join(event.arguments)
-        logging.info("Channel: %s | User: %s | Mode: %s", event.target, nick, action)
-        self._append(
-            self._channel_file(event.target), f"*** {nick} sets mode: {action}"
+        logging.info(
+            "Channel: %s | User: %s | Mode: %s",
+            event.target, nick, " ".join(event.arguments),
         )
+        self._append(self._channel_file(event.target), self._format_mode(event))
 
     def watched_pubmsg(self, event):
         """Marks a channel message from a watched nick with a single dot."""
@@ -161,32 +171,15 @@ class Logger:
 
     def watched_join_part(self, event):
         """Stores join and part events for a watched nick, in its own file."""
-        action = event.type
-        tag = '==='
-        if action == 'join':
-            tag = '==>'
-        elif action == 'part':
-            tag = '<=='
-        self._append(
-            f"nick_{event.source.nick}.log",
-            f"{tag} {event.source.nick} {action}ed the channel",
-        )
+        self._append(f"nick_{event.source.nick}.log", self._format_join_part(event))
 
     def watched_action(self, event):
         """Stores a CTCP action from a watched nick in its own file."""
-        self._append(
-            f"nick_{event.source.nick}.log",
-            f"-*- {event.source.nick} {event.arguments[0]}",
-        )
+        self._append(f"nick_{event.source.nick}.log", self._format_action(event))
 
     def watched_kick(self, event, nick: str):
         """Stores a kick event in ``nick``'s own file (kicker or kicked)."""
-        kicked = event.arguments[0]
-        reason = event.arguments[1] if len(event.arguments) > 1 else ''
-        self._append(
-            f"nick_{nick}.log",
-            f"<=* {event.source.nick} has kicked {kicked}: {reason}",
-        )
+        self._append(f"nick_{nick}.log", self._format_kick(event))
 
     def watched_mode(self, event, nick: str):
         """Stores a channel mode change affecting a watched nick.
@@ -195,10 +188,7 @@ class Logger:
         multi-target lines (e.g. "+ov bob alice") — the whole line is logged
         whenever the watched nick appears anywhere among the parameters.
         """
-        action = " ".join(event.arguments)
-        self._append(
-            f"nick_{nick}.log", f"*** {event.source.nick} sets mode: {action}"
-        )
+        self._append(f"nick_{nick}.log", self._format_mode(event))
 
     def watched_nick(self, event):
         """Stores a rename of a watched nick in its (pre-rename) own file.
@@ -207,10 +197,7 @@ class Logger:
         Config.observa_nicks entry to the new nick — that stays a separate,
         explicit "observa quita/pon" step for now.
         """
-        self._append(
-            f"nick_{event.source.nick}.log",
-            f"*** {event.source.nick} is now known as {event.target}",
-        )
+        self._append(f"nick_{event.source.nick}.log", self._format_nick_change(event))
 
     def watched_away(self, event):
         """Stores an away-notify status change for a watched nick."""

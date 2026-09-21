@@ -39,7 +39,11 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.irc_admin_password = ""
         self.irc_admin_users = set()
         self.observa_nicks = []
-        self.watched_nicks_online = set()  # transient; never persisted
+        # Live runtime state, not settings: unlike every field above (which
+        # is either persisted via shelve or, like irc_admin_users, at least
+        # meant to describe durable configuration), this is rebuilt from
+        # WATCH replies each connection and must never be persisted.
+        self.watched_nicks_online = set()
 
         self.configdir = configdir if configdir is not None else user_config_dir("mentat")
         self.logdir = logdir if logdir is not None else user_log_dir("mentat")

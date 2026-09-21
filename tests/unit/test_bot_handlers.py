@@ -162,38 +162,25 @@ def test_on_chghost_for_a_non_watched_nick_touches_no_nick_file(bot, fake_connec
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
-def test_on_600_marks_online_and_logs(bot, fake_connection, make_event, tmp_config):
-    event = make_event("600", "server", "Mentat", arguments=["bob", "u", "h", "123", "logged online"])
-    bot.on_600(fake_connection, event)
-    assert tmp_config.is_watched_nick_online("bob")
+@pytest.mark.parametrize(
+    "numeric, starts_online, expect_online, verb",
+    [
+        ("600", False, True, "connected"),
+        ("604", False, True, "connected"),
+        ("601", True, False, "disconnected"),
+        ("605", True, False, "disconnected"),
+    ],
+)
+def test_watch_numerics_update_online_state_and_log(
+    bot, fake_connection, make_event, tmp_config, numeric, starts_online, expect_online, verb
+):
+    if starts_online:
+        tmp_config.mark_watched_nick_online("bob")
+    event = make_event(numeric, "server", "Mentat", arguments=["bob", "u", "h", "123", "msg"])
+    getattr(bot, f"on_{numeric}")(fake_connection, event)
+    assert tmp_config.is_watched_nick_online("bob") is expect_online
     with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
-        assert "bob has connected" in handle.read()
-
-
-def test_on_601_marks_offline_and_logs(bot, fake_connection, make_event, tmp_config):
-    tmp_config.mark_watched_nick_online("bob")
-    event = make_event("601", "server", "Mentat", arguments=["bob", "u", "h", "123", "logged offline"])
-    bot.on_601(fake_connection, event)
-    assert not tmp_config.is_watched_nick_online("bob")
-    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
-        assert "bob has disconnected" in handle.read()
-
-
-def test_on_604_marks_online_and_logs(bot, fake_connection, make_event, tmp_config):
-    event = make_event("604", "server", "Mentat", arguments=["bob", "u", "h", "123", "is online"])
-    bot.on_604(fake_connection, event)
-    assert tmp_config.is_watched_nick_online("bob")
-    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
-        assert "bob has connected" in handle.read()
-
-
-def test_on_605_marks_offline_and_logs(bot, fake_connection, make_event, tmp_config):
-    tmp_config.mark_watched_nick_online("bob")
-    event = make_event("605", "server", "Mentat", arguments=["bob", "is offline"])
-    bot.on_605(fake_connection, event)
-    assert not tmp_config.is_watched_nick_online("bob")
-    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
-        assert "bob has disconnected" in handle.read()
+        assert f"bob has {verb}" in handle.read()
 
 
 def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
