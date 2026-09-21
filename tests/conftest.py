@@ -42,6 +42,7 @@ def tmp_config(tmp_path, cli_args) -> Config:
         logdir=str(tmp_path / "logs"),
     )
     config.irc_channels = ["#mentat"]
+    config.observa_nicks = []
     return config
 
 

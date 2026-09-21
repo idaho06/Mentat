@@ -108,13 +108,14 @@ def test_redact_ignores_empty_secrets(tmp_path, cli_args):
     assert config.redact("nothing to hide") == "nothing to hide"
 
 
-def test_observa_nicks_defaults_to_empty_list(tmp_path, cli_args):
+def test_observa_nicks_defaults_to_qetu_and_shula(tmp_path, cli_args):
     config = make(tmp_path, cli_args)
-    assert config.observa_nicks == []
+    assert config.observa_nicks == ["Qetu", "Shula"]
 
 
 def test_add_watched_nick_persists_across_restart(tmp_path, cli_args):
     config = make(tmp_path, cli_args)
+    config.observa_nicks = []
     config.add_watched_nick("bob")
     assert make(tmp_path, cli_args).observa_nicks == ["bob"]
 
@@ -135,6 +136,7 @@ def test_add_watched_nick_refuses_past_the_cap(tmp_config):
 
 def test_remove_watched_nick_removes_case_insensitively_and_persists(tmp_path, cli_args):
     config = make(tmp_path, cli_args)
+    config.observa_nicks = []
     config.add_watched_nick("Bob")
     config.remove_watched_nick("BOB")
     assert config.observa_nicks == []

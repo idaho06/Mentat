@@ -38,7 +38,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.irc_channels = ["#mentat"]
         self.irc_admin_password = ""
         self.irc_admin_users = set()
-        self.observa_nicks = []
+        self.observa_nicks = ["Qetu", "Shula"]
         # Live runtime state, not settings: unlike every field above (which
         # is either persisted via shelve or, like irc_admin_users, at least
         # meant to describe durable configuration), this is rebuilt from
