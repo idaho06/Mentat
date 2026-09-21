@@ -39,6 +39,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.irc_admin_password = ""
         self.irc_admin_users = set()
         self.observa_nicks = []
+        self.watched_nicks_online = set()  # transient; never persisted
 
         self.configdir = configdir if configdir is not None else user_config_dir("mentat")
         self.logdir = logdir if logdir is not None else user_log_dir("mentat")
@@ -124,6 +125,22 @@ class Config:  # pylint: disable=too-many-instance-attributes
         if self.has_watched_nick(nick):
             self.observa_nicks.remove(IRCFoldedCase(nick))
             self.create_configfile(self.configfile)
+
+    def mark_watched_nick_online(self, nick: str):
+        """Records a watched nick as currently connected."""
+        self.watched_nicks_online.add(irc.strings.lower(nick))
+
+    def mark_watched_nick_offline(self, nick: str):
+        """Records a watched nick as currently disconnected."""
+        self.watched_nicks_online.discard(irc.strings.lower(nick))
+
+    def is_watched_nick_online(self, nick: str) -> bool:
+        """Checks if a watched nick is currently marked as connected."""
+        return irc.strings.lower(nick) in self.watched_nicks_online
+
+    def clear_watched_nicks_online(self):
+        """Forgets all online/offline state, e.g. after a disconnect."""
+        self.watched_nicks_online.clear()
 
     def redact(self, text: str) -> str:
         """Replaces the configured passwords in ``text`` with asterisks."""

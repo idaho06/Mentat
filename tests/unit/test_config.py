@@ -158,3 +158,31 @@ def test_loading_an_old_configfile_without_observa_nicks_key_does_not_raise(tmp_
         del db["OBSERVA_NICKS"]
     reloaded = make(tmp_path, cli_args)
     assert reloaded.observa_nicks == []
+
+
+def test_new_config_has_no_nicks_online(tmp_config):
+    assert not tmp_config.is_watched_nick_online("bob")
+
+
+def test_mark_watched_nick_online_then_offline_round_trips(tmp_config):
+    tmp_config.mark_watched_nick_online("Bob")
+    assert tmp_config.is_watched_nick_online("bob")
+    assert tmp_config.is_watched_nick_online("BOB")
+
+    tmp_config.mark_watched_nick_offline("BOB")
+    assert not tmp_config.is_watched_nick_online("bob")
+
+
+def test_clear_watched_nicks_online_empties_the_set(tmp_config):
+    tmp_config.mark_watched_nick_online("bob")
+    tmp_config.mark_watched_nick_online("alice")
+    tmp_config.clear_watched_nicks_online()
+    assert not tmp_config.is_watched_nick_online("bob")
+    assert not tmp_config.is_watched_nick_online("alice")
+
+
+def test_watched_nicks_online_is_never_persisted(tmp_path, cli_args):
+    config = make(tmp_path, cli_args)
+    config.mark_watched_nick_online("bob")
+    reloaded = make(tmp_path, cli_args)
+    assert not reloaded.is_watched_nick_online("bob")
