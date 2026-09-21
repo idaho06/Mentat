@@ -229,6 +229,16 @@ class Logger:
             f"nick_{nick}.log", f"*** {nick} changed host to {new_ident}@{new_host}"
         )
 
+    def watched_connect(self, event):
+        """Stores a watched nick's connect event (WATCH numeric 600/604)."""
+        nick = event.arguments[0]
+        self._append(f"nick_{nick}.log", f">>> {nick} has connected")
+
+    def watched_disconnect(self, event):
+        """Stores a watched nick's disconnect event (WATCH numeric 601/605)."""
+        nick = event.arguments[0]
+        self._append(f"nick_{nick}.log", f"<<< {nick} has disconnected")
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)

@@ -193,6 +193,18 @@ def test_watched_chghost(file_logger, tmp_config, make_event):
     assert read(tmp_config, "nick_bob.log") == ["*** bob changed host to newident@newhost"]
 
 
+def test_watched_connect(file_logger, tmp_config, make_event):
+    event = make_event("600", "server", "Mentat", arguments=["bob", "u", "h", "123", "logged online"])
+    file_logger.watched_connect(event)
+    assert read(tmp_config, "nick_bob.log") == [">>> bob has connected"]
+
+
+def test_watched_disconnect(file_logger, tmp_config, make_event):
+    event = make_event("601", "server", "Mentat", arguments=["bob", "u", "h", "123", "logged offline"])
+    file_logger.watched_disconnect(event)
+    assert read(tmp_config, "nick_bob.log") == ["<<< bob has disconnected"]
+
+
 def test_watched_pubmsg_and_privmsg_share_the_same_file(file_logger, tmp_config, make_event):
     file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "hi"))
     file_logger.privmsg(make_event("privmsg", "bob", "Mentat", "hola"))

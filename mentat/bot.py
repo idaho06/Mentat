@@ -276,6 +276,30 @@ class Mentat(irc.bot.SingleServerIRCBot):
         if self.config.has_watched_nick(event.source.nick):
             self.logger.watched_chghost(event)
 
+    def on_600(self, connection: ServerConnection, event):
+        """Function to handle RPL_LOGON: a watched nick just connected."""
+        nick = event.arguments[0]
+        self.config.mark_watched_nick_online(nick)
+        self.logger.watched_connect(event)
+
+    def on_601(self, connection: ServerConnection, event):
+        """Function to handle RPL_LOGOFF: a watched nick just disconnected."""
+        nick = event.arguments[0]
+        self.config.mark_watched_nick_offline(nick)
+        self.logger.watched_disconnect(event)
+
+    def on_604(self, connection: ServerConnection, event):
+        """Function to handle RPL_NOWON: a watched nick is online (initial state)."""
+        nick = event.arguments[0]
+        self.config.mark_watched_nick_online(nick)
+        self.logger.watched_connect(event)
+
+    def on_605(self, connection: ServerConnection, event):
+        """Function to handle RPL_NOWOFF: a watched nick is offline (initial state)."""
+        nick = event.arguments[0]
+        self.config.mark_watched_nick_offline(nick)
+        self.logger.watched_disconnect(event)
+
     def _capture_quit_channels(self, connection: ServerConnection, event):
         """Records which channels a quitting nick was in.
 

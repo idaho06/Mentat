@@ -107,3 +107,25 @@ def test_chghost_is_logged_for_a_watched_nick(driver, live_bot, bot_config):
     driver.inject_line(":bob!bob@localhost CHGHOST newident newhost")
     with open(f"{bot_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
         assert "newident@newhost" in handle.read()
+
+
+def test_watch_numerics_via_injected_lines(driver, live_bot, bot_config):
+    bot_config.add_watched_nick("bob")
+    driver.connect_and_join("#mentat")
+
+    driver.inject_line(":localhost 600 Mentat bob u h 123 :logged online")
+    assert bot_config.is_watched_nick_online("bob")
+
+    driver.inject_line(":localhost 601 Mentat bob u h 123 :logged offline")
+    assert not bot_config.is_watched_nick_online("bob")
+
+    driver.inject_line(":localhost 604 Mentat bob u h 123 :is online")
+    assert bot_config.is_watched_nick_online("bob")
+
+    driver.inject_line(":localhost 605 Mentat bob :is offline")
+    assert not bot_config.is_watched_nick_online("bob")
+
+    with open(f"{bot_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        content = handle.read()
+    assert content.count("has connected") == 2
+    assert content.count("has disconnected") == 2
