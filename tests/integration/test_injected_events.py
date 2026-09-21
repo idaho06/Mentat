@@ -4,6 +4,8 @@ They still go through the irc library parser and its own channel tracking,
 so this checks Mentat's handlers together with the library's bookkeeping.
 """
 
+import os
+
 from mentat.status import Status
 
 SPANISH_433 = (
@@ -60,8 +62,22 @@ def test_registered_nick_sends_the_password_on_the_wire(driver, live_bot):
     assert live_bot.connection.get_nickname() == "Mentat"
 
 
-def test_quit_of_another_user_is_logged(driver, bot_config):
+def test_quit_of_another_user_is_logged_to_every_channel_they_were_in(driver, live_bot, bot_config):
+    driver.connect_and_join("#mentat")
+    nick = live_bot.connection.get_nickname()
+    driver.inject_line(f":{nick}!{nick}@localhost JOIN #other")
+    driver.inject_line(":bob!bob@localhost JOIN #mentat")
+    driver.inject_line(":bob!bob@localhost JOIN #other")
+    driver.inject_line(":bob!bob@localhost QUIT :gone fishing")
+    assert "<<< bob has quit: gone fishing" in channel_log(bot_config)
+    assert "<<< bob has quit: gone fishing" in channel_log(bot_config, "other")
+    # the library's own bookkeeping still removes bob everywhere
+    assert not live_bot.channels["#mentat"].has_user("bob")
+    assert not os.path.exists(f"{bot_config.logdir}/nick_bob.log")
+
+
+def test_quit_of_a_user_in_no_known_channels_writes_nothing(driver, bot_config):
     driver.connect_and_join("#mentat")
     driver.inject_line(":bob!bob@localhost QUIT :gone fishing")
-    with open(f"{bot_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
-        assert "<<< bob has quit: gone fishing" in handle.read()
+    assert not os.path.exists(f"{bot_config.logdir}/nick_bob.log")
+    assert "bob" not in channel_log(bot_config)
