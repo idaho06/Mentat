@@ -151,12 +151,21 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_dccmsg(self, connection: ServerConnection, event):
         """Function to handle DCC messages."""
-        # non-chat DCC messages are raw bytes; decode as text
-        text = event.arguments[0].decode("utf-8")
+        # non-chat DCC messages are raw bytes; decode as text, and never
+        # raise on invalid bytes (an exception here would kill the bot)
+        text = event.arguments[0].decode("utf-8", errors="replace")
         connection.privmsg(event.source.nick, "You said: " + text)
 
     def on_dccchat(self, connection: ServerConnection, event):
-        """Function to handle DCC chat requests."""
+        """Function to handle DCC chat requests.
+
+        Accepting a DCC CHAT makes the bot open a TCP connection to the
+        address the requester chooses, so only admins may ask for it.
+        """
+        if not self.config.is_admin(event.source.nick):
+            logging.warning(
+                "Ignoring DCC chat request from non-admin %s", event.source)
+            return
         if len(event.arguments) != 2:
             return
         args = event.arguments[1].split()
