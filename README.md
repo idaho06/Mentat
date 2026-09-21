@@ -23,3 +23,41 @@ docker compose -f docker-compose.test.yml down
 
 Without `MENTAT_TEST_IRC` the `real_server` tests are skipped. Any other IRC
 server without a password works too.
+
+## Building the Docker image
+
+The image build needs BuildKit (default on Docker ≥ 23; otherwise set
+`DOCKER_BUILDKIT=1`). The bot's nick password and admin password are passed
+in as BuildKit secrets, not `--build-arg` — build args are baked into image
+layer metadata and are recoverable forever via `docker history`, secrets are
+not.
+
+**Local files** (default, convenient for local dev): create
+`secrets/password.txt` and `secrets/adminpassword.txt` (see
+`secrets/README.md`; both are gitignored, never commit real values here),
+then:
+
+```
+docker build \
+  --secret id=password,src=secrets/password.txt \
+  --secret id=adminpassword,src=secrets/adminpassword.txt \
+  -t mentat .
+```
+
+`docker compose build` uses the same files via the `secrets:` block in
+`docker-compose.yml`.
+
+**Environment variables** (nothing touches disk — preferred for CI):
+
+```
+MENTAT_PASSWORD=... MENTAT_ADMINPASSWORD=... docker build \
+  --secret id=password,env=MENTAT_PASSWORD \
+  --secret id=adminpassword,env=MENTAT_ADMINPASSWORD \
+  -t mentat .
+```
+
+**Security note:** the resulting image still contains a `mentat.conf` file
+with the password stored in plaintext (the bot's own config format, unrelated
+to how the build secret was supplied). Anyone with the built image can
+extract that file, so treat the image itself as sensitive — don't push it to
+a public or shared registry.

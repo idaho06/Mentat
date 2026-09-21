@@ -3,6 +3,11 @@ version: "2.1"
 services:
   mentat:
     image: mentat
+    build:
+      context: .
+      secrets:
+        - password
+        - adminpassword
     container_name: Mentat
     environment:
       - PUID=65534
@@ -11,3 +16,9 @@ services:
     volumes:
       - /srv/almacen/mentat/logs:/var/log/mentat
     restart: unless-stopped
+
+secrets:
+  password:
+    file: ./secrets/password.txt
+  adminpassword:
+    file: ./secrets/adminpassword.txt

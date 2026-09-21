@@ -8,3 +8,10 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
+
+# Local Docker build secrets - never commit real values here.
+/secrets/*
+!/secrets/README.md
+.env
+.env.*
+*.secret
