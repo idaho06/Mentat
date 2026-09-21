@@ -106,3 +106,55 @@ def test_redact_replaces_every_secret(tmp_config):
 def test_redact_ignores_empty_secrets(tmp_path, cli_args):
     config = make(tmp_path, cli_args)
     assert config.redact("nothing to hide") == "nothing to hide"
+
+
+def test_observa_nicks_defaults_to_empty_list(tmp_path, cli_args):
+    config = make(tmp_path, cli_args)
+    assert config.observa_nicks == []
+
+
+def test_add_watched_nick_persists_across_restart(tmp_path, cli_args):
+    config = make(tmp_path, cli_args)
+    config.add_watched_nick("bob")
+    assert make(tmp_path, cli_args).observa_nicks == ["bob"]
+
+
+def test_add_watched_nick_is_case_insensitive_and_dedups(tmp_config):
+    tmp_config.add_watched_nick("Bob")
+    tmp_config.add_watched_nick("BOB")
+    assert tmp_config.observa_nicks == ["Bob"]
+
+
+def test_add_watched_nick_refuses_past_the_cap(tmp_config):
+    for i in range(30):
+        assert tmp_config.add_watched_nick(f"n{i}") is True
+    assert tmp_config.add_watched_nick("one-too-many") is False
+    assert len(tmp_config.observa_nicks) == 30
+    assert "one-too-many" not in tmp_config.observa_nicks
+
+
+def test_remove_watched_nick_removes_case_insensitively_and_persists(tmp_path, cli_args):
+    config = make(tmp_path, cli_args)
+    config.add_watched_nick("Bob")
+    config.remove_watched_nick("BOB")
+    assert config.observa_nicks == []
+    assert make(tmp_path, cli_args).observa_nicks == []
+    # no-op if absent, must not raise
+    config.remove_watched_nick("nosuchnick")
+
+
+def test_has_watched_nick_is_case_insensitive(tmp_config):
+    tmp_config.add_watched_nick("Bob")
+    assert tmp_config.has_watched_nick("bob")
+    assert tmp_config.has_watched_nick("BOB")
+    assert not tmp_config.has_watched_nick("alice")
+
+
+def test_loading_an_old_configfile_without_observa_nicks_key_does_not_raise(tmp_path, cli_args):
+    import shelve
+
+    config = make(tmp_path, cli_args)
+    with shelve.open(config.configfile) as db:
+        del db["OBSERVA_NICKS"]
+    reloaded = make(tmp_path, cli_args)
+    assert reloaded.observa_nicks == []

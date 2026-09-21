@@ -11,6 +11,8 @@ from appdirs import user_config_dir, user_log_dir
 import irc.strings
 from irc.strings import IRCFoldedCase
 
+MAX_OBSERVA_NICKS = 30
+
 
 class Config:  # pylint: disable=too-many-instance-attributes
     """Class for the configuration of the bot."""
@@ -36,6 +38,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.irc_channels = ["#mentat"]
         self.irc_admin_password = ""
         self.irc_admin_users = set()
+        self.observa_nicks = []
 
         self.configdir = configdir if configdir is not None else user_config_dir("mentat")
         self.logdir = logdir if logdir is not None else user_log_dir("mentat")
@@ -98,6 +101,30 @@ class Config:  # pylint: disable=too-many-instance-attributes
         if self.has_channel(channel):
             self.irc_channels.remove(IRCFoldedCase(channel))
 
+    def has_watched_nick(self, nick: str) -> bool:
+        """Checks if a nick is in the watch list (case-insensitive)."""
+        return IRCFoldedCase(nick) in self.observa_nicks
+
+    def add_watched_nick(self, nick: str) -> bool:
+        """Adds a nick to the watch list, unless it is already there.
+
+        Returns False if the list is already at MAX_OBSERVA_NICKS (matching
+        this server's WATCH=30 limit), True otherwise.
+        """
+        if self.has_watched_nick(nick):
+            return True
+        if len(self.observa_nicks) >= MAX_OBSERVA_NICKS:
+            return False
+        self.observa_nicks.append(nick)
+        self.create_configfile(self.configfile)
+        return True
+
+    def remove_watched_nick(self, nick: str):
+        """Removes a nick from the watch list; no-op if it is not there."""
+        if self.has_watched_nick(nick):
+            self.observa_nicks.remove(IRCFoldedCase(nick))
+            self.create_configfile(self.configfile)
+
     def redact(self, text: str) -> str:
         """Replaces the configured passwords in ``text`` with asterisks."""
         for secret in (self.irc_password, self.irc_admin_password):
@@ -119,6 +146,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             db["IRC_CHANNELS"] = self.irc_channels
             db["IRC_ADMIN_PASSWORD"] = self.irc_admin_password
             db["LOGDIR"] = self.logdir
+            db["OBSERVA_NICKS"] = self.observa_nicks
 
     def load_configfile(self, configfile: str):
         """Loads the configuration file."""
@@ -134,3 +162,4 @@ class Config:  # pylint: disable=too-many-instance-attributes
             self.irc_channels = db["IRC_CHANNELS"]
             self.irc_admin_password = db["IRC_ADMIN_PASSWORD"]
             self.logdir = db["LOGDIR"]
+            self.observa_nicks = db.get("OBSERVA_NICKS", [])
