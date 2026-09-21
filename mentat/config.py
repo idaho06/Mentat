@@ -33,7 +33,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.irc_realname = "Piter de Vries"
         self.irc_ident = "mentat"
         self.irc_password = ""
-        self.irc_channels = ["#mentat", "#malos"]
+        self.irc_channels = ["#mentat"]
         self.irc_admin_password = ""
         self.irc_admin_users = set()
 
