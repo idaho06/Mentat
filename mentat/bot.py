@@ -87,7 +87,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.info("End of MOTD received. Setting mode +In")
         connection.mode(connection.get_nickname(), "+In")
         logging.info(
-            "End of MOTD received. Joining channels: %s", self.channels)
+            "End of MOTD received. Joining channels: %s", self.config.irc_channels)
         for channel in self.config.irc_channels:
             logging.info("Joining channel: %s", channel)
             connection.join(channel)
