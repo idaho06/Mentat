@@ -159,6 +159,19 @@ class Logger:
         """Marks a channel message from a watched nick with a single dot."""
         self._append_raw(f"nick_{event.source.nick}.log", ".")
 
+    def watched_join_part(self, event):
+        """Stores join and part events for a watched nick, in its own file."""
+        action = event.type
+        tag = '==='
+        if action == 'join':
+            tag = '==>'
+        elif action == 'part':
+            tag = '<=='
+        self._append(
+            f"nick_{event.source.nick}.log",
+            f"{tag} {event.source.nick} {action}ed the channel",
+        )
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)

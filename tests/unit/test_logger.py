@@ -138,6 +138,15 @@ def test_watched_pubmsg_appends_a_single_dot_with_no_timestamp_or_newline(file_l
         assert f.read() == b".."
 
 
+def test_watched_join_and_part(file_logger, tmp_config, make_event):
+    file_logger.watched_join_part(make_event("join", "bob", "#mentat"))
+    file_logger.watched_join_part(make_event("part", "bob", "#mentat"))
+    assert read(tmp_config, "nick_bob.log") == [
+        "==> bob joined the channel",
+        "<== bob parted the channel",
+    ]
+
+
 def test_watched_pubmsg_and_privmsg_share_the_same_file(file_logger, tmp_config, make_event):
     file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "hi"))
     file_logger.privmsg(make_event("privmsg", "bob", "Mentat", "hola"))

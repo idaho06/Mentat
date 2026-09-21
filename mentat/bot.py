@@ -168,12 +168,16 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_join function: c: %s, e: %s",
                       connection, event)
         self.logger.join_part(event)
+        if self.config.has_watched_nick(event.source.nick):
+            self.logger.watched_join_part(event)
 
     def on_part(self, connection: ServerConnection, event):
         """Function to handle part messages."""
         logging.debug("Entering on_part function: c: %s, e: %s",
                       connection, event)
         self.logger.join_part(event)
+        if self.config.has_watched_nick(event.source.nick):
+            self.logger.watched_join_part(event)
 
     def on_dccmsg(self, connection: ServerConnection, event):
         """Function to handle DCC messages."""

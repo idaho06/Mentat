@@ -55,6 +55,23 @@ def test_pubmsg_from_a_non_watched_nick_does_not_touch_its_nick_file(bot, fake_c
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
+def test_join_and_part_from_a_watched_nick_also_log_to_its_nick_file(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    bot.on_join(fake_connection, make_event("join", "bob", "#mentat"))
+    bot.on_part(fake_connection, make_event("part", "bob", "#mentat"))
+    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        content = handle.read()
+    assert "bob joined the channel" in content
+    assert "bob parted the channel" in content
+    assert "bob joined the channel" in channel_log(tmp_config)
+
+
+def test_join_and_part_from_a_non_watched_nick_do_not_touch_its_nick_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_join(fake_connection, make_event("join", "tester", "#mentat"))
+    bot.on_part(fake_connection, make_event("part", "tester", "#mentat"))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
+
+
 def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
     bot.on_privmsg(fake_connection, make_event("privmsg", "tester", "Mentat", "hola -n Bob"))
     assert fake_connection.sent("privmsg") == [("tester", "Hola, Bob")]
