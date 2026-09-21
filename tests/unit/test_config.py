@@ -55,7 +55,7 @@ def test_logdir_from_cli_is_created_and_stored(tmp_path, cli_args):
 def test_defaults_when_nothing_is_given(tmp_path, cli_args):
     config = make(tmp_path, cli_args)
     assert config.irc_nick == "Mentat"
-    assert config.irc_channels == ["#mentat", "#malos"]
+    assert config.irc_channels == ["#mentat"]
     assert config.irc_password == ""
     assert config.irc_admin_password == ""
 
