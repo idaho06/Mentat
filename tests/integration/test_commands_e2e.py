@@ -54,6 +54,15 @@ def test_join_and_part_update_bot_and_config(connected, client, live_bot, bot_co
     assert bot_config.irc_channels == ["#mentat"]
 
 
+def test_observa_bare_reports_online_watched_nicks_end_to_end(connected, client, bot_config):
+    client.say("Mentat", "observa pon bob")
+    connected.run_until(lambda: bot_config.has_watched_nick("bob"))
+
+    connected.inject_line(":localhost 604 Mentat bob u h 123 :is online")
+    client.say("Mentat", "observa")
+    assert client.expect_privmsg("Mentat", "idaho") == "bob"
+
+
 def test_dados(connected, client):
     client.say("Mentat", "dados -d 6 -n 2")
     total = client.expect_privmsg("Mentat", "idaho")

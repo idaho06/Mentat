@@ -260,3 +260,29 @@ def test_observa_unknown_subcommand_replies_an_error(fake_connection, tmp_config
     observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["nope"], tmp_config)
     assert fake_connection.privmsgs(ADMIN) == ["Subcomando desconocido: nope"]
     assert fake_connection.sent("send_raw") == []
+
+
+def test_observa_lista_shows_the_full_configured_list(fake_connection, tmp_config, make_event):
+    tmp_config.add_watched_nick("bob")
+    tmp_config.add_watched_nick("alice")
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["lista"], tmp_config)
+    assert fake_connection.privmsgs(ADMIN) == ["bob, alice"]
+
+
+def test_observa_lista_when_empty(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["lista"], tmp_config)
+    assert fake_connection.privmsgs(ADMIN) == ["No hay nicks vigilados"]
+
+
+def test_observa_bare_shows_only_online_watched_nicks(fake_connection, tmp_config, make_event):
+    tmp_config.add_watched_nick("bob")
+    tmp_config.add_watched_nick("alice")
+    tmp_config.mark_watched_nick_online("bob")
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), [], tmp_config)
+    assert fake_connection.privmsgs(ADMIN) == ["bob"]
+
+
+def test_observa_bare_when_none_online(fake_connection, tmp_config, make_event):
+    tmp_config.add_watched_nick("bob")
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), [], tmp_config)
+    assert fake_connection.privmsgs(ADMIN) == ["Ningún nick vigilado está conectado"]
