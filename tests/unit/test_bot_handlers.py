@@ -351,6 +351,46 @@ def test_capture_quit_channels_records_channels_before_the_library_clears_them(
     assert event.quit_channels == ["#mentat"]
 
 
+# mention detection ----------------------------------------------------------
+
+def test_mentioned_watched_nicks_matches_case_insensitively(bot, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    # pylint: disable=protected-access
+    assert bot._mentioned_watched_nicks("hey QETU, how are you", "Peter") == ["Qetu"]
+
+
+def test_mentioned_watched_nicks_requires_a_word_boundary(bot, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    # pylint: disable=protected-access
+    assert bot._mentioned_watched_nicks("asqetuas is not a mention", "Peter") == []
+
+
+def test_mentioned_watched_nicks_matches_with_trailing_punctuation(bot, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    # pylint: disable=protected-access
+    assert bot._mentioned_watched_nicks("Qetu: hello!", "Peter") == ["Qetu"]
+
+
+def test_mentioned_watched_nicks_excludes_the_given_nick_case_insensitively(bot, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    # pylint: disable=protected-access
+    assert bot._mentioned_watched_nicks("I am qetu", "Qetu") == []
+    assert bot._mentioned_watched_nicks("I am qetu", "QETU") == []
+
+
+def test_mentioned_watched_nicks_returns_each_distinct_nick_once(bot, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    tmp_config.add_watched_nick("Shula")
+    # pylint: disable=protected-access
+    assert bot._mentioned_watched_nicks("Qetu Qetu and Shula are here", "Peter") == ["Qetu", "Shula"]
+
+
+def test_mentioned_watched_nicks_with_no_mention_returns_empty(bot, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    # pylint: disable=protected-access
+    assert bot._mentioned_watched_nicks("nothing to see here", "Peter") == []
+
+
 def test_on_quit_logs_to_the_channels_captured_on_the_event(
     bot, fake_connection, make_event, tmp_config
 ):

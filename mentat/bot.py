@@ -1,6 +1,7 @@
 """Bot module for Mentat. This module contains the class for the bot."""
 
 import logging
+import re
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
@@ -303,6 +304,23 @@ class Mentat(irc.bot.SingleServerIRCBot):
         nick = event.arguments[0]
         self.config.mark_watched_nick_offline(nick)
         self.logger.watched_disconnect(event)
+
+    def _mentioned_watched_nicks(self, text: str, exclude_nick: str) -> list:
+        """Watched nicks mentioned by name in ``text``, excluding ``exclude_nick``.
+
+        Matches case-insensitively on a word boundary (so "Qetu:" or "hey
+        QETU" match but "asqetuas" doesn't); relies on Python's regex \\b,
+        which assumes the nick starts/ends with a word character — a nick
+        with a leading/trailing symbol (e.g. "[bot]") wouldn't match
+        reliably, not a concern for the currently configured nicks.
+        """
+        mentioned = []
+        for nick in self.config.observa_nicks:
+            if irc.strings.lower(nick) == irc.strings.lower(exclude_nick):
+                continue
+            if re.search(r"\b" + re.escape(nick) + r"\b", text, re.IGNORECASE):
+                mentioned.append(nick)
+        return mentioned
 
     def _capture_quit_channels(self, connection: ServerConnection, event):
         """Records which channels a quitting nick was in.
