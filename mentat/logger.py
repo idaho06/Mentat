@@ -172,6 +172,13 @@ class Logger:
             f"{tag} {event.source.nick} {action}ed the channel",
         )
 
+    def watched_action(self, event):
+        """Stores a CTCP action from a watched nick in its own file."""
+        self._append(
+            f"nick_{event.source.nick}.log",
+            f"-*- {event.source.nick} {event.arguments[0]}",
+        )
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)

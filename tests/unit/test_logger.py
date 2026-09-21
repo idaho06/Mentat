@@ -147,6 +147,11 @@ def test_watched_join_and_part(file_logger, tmp_config, make_event):
     ]
 
 
+def test_watched_action(file_logger, tmp_config, make_event):
+    file_logger.watched_action(make_event("action", "bob", "#mentat", "waves"))
+    assert read(tmp_config, "nick_bob.log") == ["-*- bob waves"]
+
+
 def test_watched_pubmsg_and_privmsg_share_the_same_file(file_logger, tmp_config, make_event):
     file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "hi"))
     file_logger.privmsg(make_event("privmsg", "bob", "Mentat", "hola"))

@@ -72,6 +72,18 @@ def test_join_and_part_from_a_non_watched_nick_do_not_touch_its_nick_file(bot, f
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
+def test_action_from_a_watched_nick_also_logs_to_its_nick_file(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    bot.on_action(fake_connection, make_event("action", "bob", "#mentat", "waves"))
+    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        assert "bob waves" in handle.read()
+
+
+def test_action_from_a_non_watched_nick_does_not_touch_its_nick_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_action(fake_connection, make_event("action", "tester", "#mentat", "waves"))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
+
+
 def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
     bot.on_privmsg(fake_connection, make_event("privmsg", "tester", "Mentat", "hola -n Bob"))
     assert fake_connection.sent("privmsg") == [("tester", "Hola, Bob")]
