@@ -1,5 +1,5 @@
 -r requirements.txt
-pytest
-pytest-cov
-pytest-timeout
-pylint
+pytest>=9.1
+pytest-cov>=7.1
+pytest-timeout>=2.4
+pylint>=4.0
