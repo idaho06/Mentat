@@ -226,7 +226,6 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug(
             "Entering do_command function: type: %s, from: %s, cmd: %s",
             event.type, event.source, _redact(cmd))
-        nick = event.source.nick
         talk_to = reply_target(event)
 
         connection = self.connection
@@ -249,7 +248,22 @@ class Mentat(irc.bot.SingleServerIRCBot):
         if parsed is None:
             send_lines(connection, talk_to, help_lines)
             return
-        command = parsed.cmd
+
+        # The irc library does not catch exceptions raised by event
+        # handlers: one would end the whole process. Commands run on user
+        # input, so anything unexpected is logged and reported instead.
+        # SystemExit (used by "morir") is not an Exception and still propagates.
+        try:
+            self._run_command(parsed.cmd, event, cmd_list)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logging.exception("Command %r failed", _redact(cmd))
+            connection.privmsg(talk_to, "Error ejecutando el comando")
+
+    def _run_command(self, command: str, event, cmd_list: list):
+        """Runs the already validated ``command`` with its arguments."""
+        nick = event.source.nick
+        talk_to = reply_target(event)
+        connection = self.connection
 
         if command == "hola":
             logging.debug("Command: hola")
