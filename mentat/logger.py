@@ -200,6 +200,18 @@ class Logger:
             f"nick_{nick}.log", f"*** {event.source.nick} sets mode: {action}"
         )
 
+    def watched_nick(self, event):
+        """Stores a rename of a watched nick in its (pre-rename) own file.
+
+        Known limitation: this does not move the WATCH subscription or the
+        Config.observa_nicks entry to the new nick — that stays a separate,
+        explicit "observa quita/pon" step for now.
+        """
+        self._append(
+            f"nick_{event.source.nick}.log",
+            f"*** {event.source.nick} is now known as {event.target}",
+        )
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)

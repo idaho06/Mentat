@@ -240,6 +240,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_nick function: c: %s, e: %s",
                       connection, event)
         self.logger.nick(event)
+        if self.config.has_watched_nick(event.source.nick):
+            self.logger.watched_nick(event)
 
     def on_umode(self, connection: ServerConnection, event):
         """Function to handle user modes."""
