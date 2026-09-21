@@ -41,6 +41,12 @@ class Logger:
         with open(path, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} {self.config.redact(line)}\n")
 
+    def _append_raw(self, filename: str, text: str):
+        """Appends ``text`` verbatim: no timestamp prefix, no trailing newline."""
+        path = f"{self.config.logdir}/{filename}"
+        with open(path, "a", encoding="utf-8", errors="replace") as f:
+            f.write(self.config.redact(text))
+
     @staticmethod
     def _channel_file(channel: str) -> str:
         """Log file name for a channel."""
@@ -148,6 +154,10 @@ class Logger:
         self._append(
             self._channel_file(event.target), f"*** {nick} sets mode: {action}"
         )
+
+    def watched_pubmsg(self, event):
+        """Marks a channel message from a watched nick with a single dot."""
+        self._append_raw(f"nick_{event.source.nick}.log", ".")
 
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""

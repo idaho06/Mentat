@@ -43,6 +43,18 @@ def test_pubmsg_not_addressed_to_the_bot_is_only_logged(bot, fake_connection, ma
     assert "::: <tester> hello all" in channel_log(tmp_config)
 
 
+def test_pubmsg_from_a_watched_nick_also_appends_a_dot(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "bob", "#mentat", "hi"))
+    with open(f"{tmp_config.logdir}/nick_bob.log", "rb") as handle:
+        assert handle.read() == b"."
+
+
+def test_pubmsg_from_a_non_watched_nick_does_not_touch_its_nick_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "tester", "#mentat", "hi"))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
+
+
 def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
     bot.on_privmsg(fake_connection, make_event("privmsg", "tester", "Mentat", "hola -n Bob"))
     assert fake_connection.sent("privmsg") == [("tester", "Hola, Bob")]

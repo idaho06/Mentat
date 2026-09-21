@@ -129,3 +129,19 @@ def test_quit_is_logged_to_every_channel_the_nick_was_in(file_logger, tmp_config
 def test_quit_with_no_channels_writes_nothing(file_logger, tmp_config, make_event):
     file_logger.quit(make_event("quit", "tester", "*", "bye"), [])
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
+
+
+def test_watched_pubmsg_appends_a_single_dot_with_no_timestamp_or_newline(file_logger, tmp_config, make_event):
+    file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "hi"))
+    file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "again"))
+    with open(f"{tmp_config.logdir}/nick_bob.log", "rb") as f:
+        assert f.read() == b".."
+
+
+def test_watched_pubmsg_and_privmsg_share_the_same_file(file_logger, tmp_config, make_event):
+    file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "hi"))
+    file_logger.privmsg(make_event("privmsg", "bob", "Mentat", "hola"))
+    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as f:
+        content = f.read()
+    assert content.startswith(".")
+    assert content.endswith("hola\n")
