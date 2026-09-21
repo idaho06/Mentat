@@ -128,6 +128,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug(
             "Entering on_disconnect function: c: %s, e: %s", connection, event)
         logging.warning("Disconnected from server: %s", event.arguments)
+        self.config.clear_watched_nicks_online()
         self.status.transition("disconnect")
 
     def on_endofmotd(self, connection: ServerConnection, event):

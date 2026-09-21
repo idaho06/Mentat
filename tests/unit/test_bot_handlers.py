@@ -290,6 +290,12 @@ def test_welcome_and_disconnect_drive_the_status(bot, fake_connection, make_even
     assert bot.status.get_status() == Status.CONNECTING
 
 
+def test_disconnect_clears_watched_nicks_online(bot, fake_connection, make_event, tmp_config):
+    tmp_config.mark_watched_nick_online("bob")
+    bot.on_disconnect(fake_connection, make_event("disconnect", "server", "", ""))
+    assert not tmp_config.is_watched_nick_online("bob")
+
+
 def test_end_of_motd_sets_umode_and_joins_configured_channels(bot, fake_connection, make_event, tmp_config):
     tmp_config.irc_channels = ["#mentat", "#other"]
     bot.on_endofmotd(fake_connection, make_event("endofmotd", "server", "Mentat", "End of MOTD"))
