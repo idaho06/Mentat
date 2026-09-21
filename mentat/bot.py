@@ -24,6 +24,14 @@ from mentat.logger import Logger
 from mentat.status import Status
 
 
+def _redact(text: str) -> str:
+    """Hide the secret in a "login <password>" command before logging it."""
+    words = text.split(maxsplit=1)
+    if words and irc.strings.lower(words[0]) == "login":
+        return "login ******"
+    return text
+
+
 class Mentat(irc.bot.SingleServerIRCBot):
     """Class for the bot."""
 
@@ -121,10 +129,13 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
     def on_privmsg(self, connection: ServerConnection, event):
         """Function to handle private messages."""
+        # the event is not logged as a whole: it may carry the admin password
+        text = event.arguments[0]
         logging.debug(
-            "Entering on_privmsg function: c: %s, e: %s", connection, event)
-        self.logger.privmsg(event)
-        self.do_command(event, event.arguments[0])
+            "Entering on_privmsg function: c: %s, from: %s, text: %s",
+            connection, event.source, _redact(text))
+        self.logger.privmsg(event, _redact(text))
+        self.do_command(event, text)
 
     def on_join(self, connection: ServerConnection, event):
         """Function to handle join messages."""
@@ -192,7 +203,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
     def do_command(self, event, cmd: str):
         """Function to handle commands."""
         logging.debug(
-            "Entering do_command function: e: %s, cmd: %s", event, cmd)
+            "Entering do_command function: type: %s, from: %s, cmd: %s",
+            event.type, event.source, _redact(cmd))
         nick = event.source.nick
         talk_to = reply_target(event)
 

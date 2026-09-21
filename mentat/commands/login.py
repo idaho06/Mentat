@@ -11,13 +11,8 @@ from mentat.commands.common import (
 
 def login(connection: ServerConnection, event, args, config: Config):
     """Login to the bot"""
-    logging.debug(
-        "Entering login function: c: %s, e: %s, args: %s, config: %s",
-        connection,
-        event,
-        args,
-        config,
-    )
+    # neither the event nor the args are logged: they carry the password
+    logging.debug("Entering login function: from: %s", event.source)
     nick = event.source.nick
     if event.type != "privmsg":
         logging.debug("No login in channels, send a private message")

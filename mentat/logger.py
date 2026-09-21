@@ -53,15 +53,21 @@ class Logger(object):
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} {tag} {event.source.nick} {action}ed the channel\n")
 
-    def privmsg(self, event):
-        """Stores messages from private messages."""
-        logging.debug("Entering privmsg function: e: %s", event)
-        logging.info("User: %s | Message: %s", event.source.nick, event.arguments[0])
+    def privmsg(self, event, text: str = None):
+        """Stores messages from private messages.
+
+        ``text`` is the message to store; it defaults to the event's text
+        and lets the caller pass a redacted version (e.g. for passwords).
+        """
+        if text is None:
+            text = event.arguments[0]
         nick = event.source.nick
+        logging.debug("Entering privmsg function: from: %s", nick)
+        logging.info("User: %s | Message: %s", nick, text)
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         filename = f"{self.config.logdir}/nick_{nick}.log"
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} {event.arguments[0]}\n")
+            f.write(f"{time} {text}\n")
 
     def action(self, event):
         """Stores actions from the channels."""
