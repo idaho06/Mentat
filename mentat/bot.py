@@ -143,6 +143,9 @@ class Mentat(irc.bot.SingleServerIRCBot):
             logging.info("Joining channel: %s", channel)
             connection.join(channel)
             logging.debug("Joined channel: %s", channel)
+        for nick in self.config.observa_nicks:
+            logging.info("Resubscribing WATCH for %s", nick)
+            connection.send_raw(f"WATCH +{nick}")
 
     def on_pubmsg(self, connection: ServerConnection, event):
         """Function to handle public messages."""

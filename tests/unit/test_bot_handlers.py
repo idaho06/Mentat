@@ -306,6 +306,18 @@ def test_end_of_motd_sets_umode_and_joins_configured_channels(bot, fake_connecti
     ]
 
 
+def test_end_of_motd_resubscribes_watch_for_every_configured_nick(bot, fake_connection, make_event, tmp_config):
+    tmp_config.observa_nicks = ["bob", "alice"]
+    bot.on_endofmotd(fake_connection, make_event("endofmotd", "server", "Mentat", "End of MOTD"))
+    assert fake_connection.sent("send_raw") == [("WATCH +bob",), ("WATCH +alice",)]
+
+
+def test_end_of_motd_sends_no_watch_when_nothing_is_configured(bot, fake_connection, make_event, tmp_config):
+    tmp_config.observa_nicks = []
+    bot.on_endofmotd(fake_connection, make_event("endofmotd", "server", "Mentat", "End of MOTD"))
+    assert fake_connection.sent("send_raw") == []
+
+
 # channel events -----------------------------------------------------------
 
 def test_being_kicked_forgets_the_channel(bot, fake_connection, make_event, tmp_config):
