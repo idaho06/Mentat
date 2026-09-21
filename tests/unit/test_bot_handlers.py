@@ -104,6 +104,18 @@ def test_kick_between_non_watched_nicks_touches_no_nick_file(bot, fake_connectio
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
+def test_mode_change_targeting_a_watched_nick_also_logs_to_its_file(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    bot.on_mode(fake_connection, make_event("mode", "idaho", "#mentat", arguments=["+o", "bob"]))
+    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        assert "idaho sets mode: +o bob" in handle.read()
+
+
+def test_mode_change_not_targeting_a_watched_nick_touches_no_nick_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_mode(fake_connection, make_event("mode", "idaho", "#mentat", arguments=["+o", "bob"]))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_bob.log")
+
+
 def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
     bot.on_privmsg(fake_connection, make_event("privmsg", "tester", "Mentat", "hola -n Bob"))
     assert fake_connection.sent("privmsg") == [("tester", "Hola, Bob")]

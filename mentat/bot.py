@@ -252,6 +252,9 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_mode function: c: %s, e: %s",
                       connection, event)
         self.logger.mode(event)
+        for nick in event.arguments[1:]:
+            if self.config.has_watched_nick(nick):
+                self.logger.watched_mode(event, nick)
 
     def _capture_quit_channels(self, connection: ServerConnection, event):
         """Records which channels a quitting nick was in.

@@ -188,6 +188,18 @@ class Logger:
             f"<=* {event.source.nick} has kicked {kicked}: {reason}",
         )
 
+    def watched_mode(self, event, nick: str):
+        """Stores a channel mode change affecting a watched nick.
+
+        Doesn't try to align flag letters with parameters positionally for
+        multi-target lines (e.g. "+ov bob alice") — the whole line is logged
+        whenever the watched nick appears anywhere among the parameters.
+        """
+        action = " ".join(event.arguments)
+        self._append(
+            f"nick_{nick}.log", f"*** {event.source.nick} sets mode: {action}"
+        )
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)
