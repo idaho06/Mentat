@@ -135,32 +135,26 @@ class Logger(object):
             f.write(f"{time} *** {nick} sets mode: {action}\n")
 
     def mode(self, event):
-        """Stores mode changes."""
+        """Stores channel mode changes."""
         logging.debug("Entering mode function: e: %s", event)
-        logging.info(
-            "Channel: %s | User: %s | Mode: %s",
-            event.target,
-            event.source.nick,
-            event.arguments[0],
-        )
+        nick = event.source.nick if event.source else "unknown"
+        # the mode string plus its parameters, e.g. "+o idaho"
+        action = " ".join(event.arguments)
+        logging.info("Channel: %s | User: %s | Mode: %s", event.target, nick, action)
         channel = event.target
         channel = channel.replace("#", "channel_")
         filename = f"{self.config.logdir}/{channel}.log"
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        action = event.arguments[0]
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} *** {event.source.nick} sets mode: {action}\n")
+            f.write(f"{time} *** {nick} sets mode: {action}\n")
 
     def quit(self, event):
         """Stores quit messages."""
         logging.debug("Entering quit function: e: %s", event)
-        logging.info(
-            "User: %s | Quit message: %s",
-            event.source.nick,
-            event.arguments[0],
-        )
         nick = event.source.nick
+        reason = event.arguments[0] if event.arguments else ""
+        logging.info("User: %s | Quit message: %s", nick, reason)
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         filename = f"{self.config.logdir}/nick_{nick}.log"
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
-            f.write(f"{time} <<< {event.source.nick} has quit: {event.arguments[0]}\n")
+            f.write(f"{time} <<< {nick} has quit: {reason}\n")

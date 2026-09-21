@@ -209,6 +209,18 @@ class Mentat(irc.bot.SingleServerIRCBot):
                       connection, event)
         self.logger.umode(event)
 
+    def on_mode(self, connection: ServerConnection, event):
+        """Function to handle channel mode changes."""
+        logging.debug("Entering on_mode function: c: %s, e: %s",
+                      connection, event)
+        self.logger.mode(event)
+
+    def on_quit(self, connection: ServerConnection, event):
+        """Function to handle quit messages."""
+        logging.debug("Entering on_quit function: c: %s, e: %s",
+                      connection, event)
+        self.logger.quit(event)
+
     def do_command(self, event, cmd: str):
         """Function to handle commands."""
         logging.debug(
