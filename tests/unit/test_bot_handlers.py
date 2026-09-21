@@ -184,12 +184,9 @@ def test_mode_umode_quit_join_part_action_nick_are_logged(bot, fake_connection, 
 def test_capture_quit_channels_records_channels_before_the_library_clears_them(
     bot, fake_connection, make_event
 ):
-    channel = irc.bot.Channel()
-    channel.add_user("robert")
-    bot.channels["#mentat"] = channel
-    other = irc.bot.Channel()
-    other.add_user("someoneelse")
-    bot.channels["#other"] = other
+    for name, nick in [("#mentat", "robert"), ("#other", "someoneelse")]:
+        bot.channels[name] = irc.bot.Channel()
+        bot.channels[name].add_user(nick)
 
     event = make_event("quit", "robert", "*", "bye")
     bot._capture_quit_channels(fake_connection, event)  # pylint: disable=protected-access
@@ -207,12 +204,14 @@ def test_on_quit_logs_to_the_channels_captured_on_the_event(
     assert not os.path.exists(f"{tmp_config.logdir}/nick_robert.log")
 
 
-def test_on_quit_without_captured_channels_writes_nothing(
-    bot, fake_connection, make_event, tmp_config
+def test_on_quit_without_captured_channels_writes_nothing_and_warns(
+    bot, fake_connection, make_event, tmp_config, caplog
 ):
-    bot.on_quit(fake_connection, make_event("quit", "robert", "*", "bye"))
+    with caplog.at_level(logging.WARNING):
+        bot.on_quit(fake_connection, make_event("quit", "robert", "*", "bye"))
     assert not os.path.exists(f"{tmp_config.logdir}/channel_mentat.log")
     assert not os.path.exists(f"{tmp_config.logdir}/nick_robert.log")
+    assert "quit event for robert has no captured channels" in caplog.text
 
 
 # DCC ----------------------------------------------------------------------

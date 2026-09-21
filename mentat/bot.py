@@ -254,6 +254,15 @@ class Mentat(irc.bot.SingleServerIRCBot):
         """Function to handle quit messages."""
         logging.debug("Entering on_quit function: c: %s, e: %s",
                       connection, event)
+        if not hasattr(event, "quit_channels"):
+            # Should be set by _capture_quit_channels, registered ahead of
+            # on_quit specifically so this always runs first. Its absence
+            # means that ordering broke, so warn instead of silently
+            # logging nothing.
+            logging.warning(
+                "quit event for %s has no captured channels; ordering with "
+                "_capture_quit_channels may be broken", event.source.nick
+            )
         self.logger.quit(event, getattr(event, "quit_channels", []))
 
     def do_command(self, event, cmd: str):
