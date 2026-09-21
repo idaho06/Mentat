@@ -152,6 +152,18 @@ def test_watched_action(file_logger, tmp_config, make_event):
     assert read(tmp_config, "nick_bob.log") == ["-*- bob waves"]
 
 
+def test_watched_kick(file_logger, tmp_config, make_event):
+    event = make_event("kick", "tester", "#mentat", arguments=["bob", "bye"])
+    file_logger.watched_kick(event, "bob")
+    assert read(tmp_config, "nick_bob.log") == ["<=* tester has kicked bob: bye"]
+
+
+def test_watched_kick_without_reason(file_logger, tmp_config, make_event):
+    event = make_event("kick", "tester", "#mentat", arguments=["bob"])
+    file_logger.watched_kick(event, "bob")
+    assert read(tmp_config, "nick_bob.log") == ["<=* tester has kicked bob: "]
+
+
 def test_watched_pubmsg_and_privmsg_share_the_same_file(file_logger, tmp_config, make_event):
     file_logger.watched_pubmsg(make_event("pubmsg", "bob", "#mentat", "hi"))
     file_logger.privmsg(make_event("privmsg", "bob", "Mentat", "hola"))

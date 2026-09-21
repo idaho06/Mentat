@@ -220,6 +220,12 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_kick function: c: %s, e: %s",
                       connection, event)
         self.logger.kick(event)
+        kicked = event.arguments[0]
+        kicker = event.source.nick
+        if self.config.has_watched_nick(kicked):
+            self.logger.watched_kick(event, kicked)
+        if self.config.has_watched_nick(kicker):
+            self.logger.watched_kick(event, kicker)
         # check if the bot was kicked (compare with the nick we actually
         # got, which may differ from the configured one, e.g. "Mentat_")
         if event.arguments[0] == connection.get_nickname():

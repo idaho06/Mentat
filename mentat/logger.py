@@ -179,6 +179,15 @@ class Logger:
             f"-*- {event.source.nick} {event.arguments[0]}",
         )
 
+    def watched_kick(self, event, nick: str):
+        """Stores a kick event in ``nick``'s own file (kicker or kicked)."""
+        kicked = event.arguments[0]
+        reason = event.arguments[1] if len(event.arguments) > 1 else ''
+        self._append(
+            f"nick_{nick}.log",
+            f"<=* {event.source.nick} has kicked {kicked}: {reason}",
+        )
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)

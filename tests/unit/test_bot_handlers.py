@@ -84,6 +84,26 @@ def test_action_from_a_non_watched_nick_does_not_touch_its_nick_file(bot, fake_c
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
+def test_kick_logs_to_the_kicked_watched_nicks_file(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("bob")
+    bot.on_kick(fake_connection, make_event("kick", "tester", "#mentat", arguments=["bob", "bye"]))
+    with open(f"{tmp_config.logdir}/nick_bob.log", encoding="utf-8") as handle:
+        assert "tester has kicked bob: bye" in handle.read()
+
+
+def test_kick_logs_to_the_kicker_watched_nicks_file(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("tester")
+    bot.on_kick(fake_connection, make_event("kick", "tester", "#mentat", arguments=["bob", "bye"]))
+    with open(f"{tmp_config.logdir}/nick_tester.log", encoding="utf-8") as handle:
+        assert "tester has kicked bob: bye" in handle.read()
+
+
+def test_kick_between_non_watched_nicks_touches_no_nick_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_kick(fake_connection, make_event("kick", "tester", "#mentat", arguments=["bob", "bye"]))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_bob.log")
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
+
+
 def test_privmsg_runs_the_command_and_logs_it(bot, fake_connection, make_event, tmp_config):
     bot.on_privmsg(fake_connection, make_event("privmsg", "tester", "Mentat", "hola -n Bob"))
     assert fake_connection.sent("privmsg") == [("tester", "Hola, Bob")]
