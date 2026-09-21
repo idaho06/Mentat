@@ -262,6 +262,18 @@ def test_observa_unknown_subcommand_replies_an_error(fake_connection, tmp_config
     assert fake_connection.sent("send_raw") == []
 
 
+def test_observa_dash_h_shows_usage_instead_of_unknown_subcommand(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["-h"], tmp_config)
+    assert fake_connection.privmsgs(ADMIN)[0].startswith("usage: observa")
+    assert fake_connection.sent("send_raw") == []
+
+
+def test_observa_dash_dash_help_shows_usage_instead_of_unknown_subcommand(fake_connection, tmp_config, make_event):
+    observa(fake_connection, make_event("privmsg", ADMIN, "Mentat"), ["--help"], tmp_config)
+    assert fake_connection.privmsgs(ADMIN)[0].startswith("usage: observa")
+    assert fake_connection.sent("send_raw") == []
+
+
 def test_observa_lista_shows_the_full_configured_list(fake_connection, tmp_config, make_event):
     tmp_config.add_watched_nick("bob")
     tmp_config.add_watched_nick("alice")

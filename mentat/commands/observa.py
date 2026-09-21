@@ -28,6 +28,15 @@ def observa(connection: ServerConnection, event, args, config: Config):
 
     talk_to = reply_target(event)
 
+    if args and args[0] in ("-h", "--help"):
+        parser = BotArgumentParser(
+            description="Gestiona la lista de nicks vigilados",
+            prog="observa",
+            epilog="Subcomandos: pon <nick>, quita <nick>, lista",
+        )
+        parse_or_reply(parser, args, connection, talk_to)
+        return
+
     if not args:
         online = sorted(n for n in config.observa_nicks if config.is_watched_nick_online(n))
         connection.privmsg(
