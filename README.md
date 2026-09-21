@@ -61,3 +61,22 @@ with the password stored in plaintext (the bot's own config format, unrelated
 to how the build secret was supplied). Anyone with the built image can
 extract that file, so treat the image itself as sensitive — don't push it to
 a public or shared registry.
+
+## Running with Docker
+
+`docker-compose.yml` bind-mounts a host directory into the container at
+`/var/log/mentat`, defaulting to `/srv/almacen/mentat/logs`. Override it by
+setting `MENTAT_LOGDIR`, either inline:
+
+```
+MENTAT_LOGDIR=/path/to/logs docker compose up -d
+```
+
+or by copying `.env.example` to `.env` and editing it there (`docker
+compose` loads `.env` automatically).
+
+With plain `docker run` (no compose), pass the mount directly instead:
+
+```
+docker run -v /path/to/logs:/var/log/mentat mentat
+```

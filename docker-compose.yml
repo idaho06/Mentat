@@ -14,7 +14,7 @@ services:
       - PGID=65534
       - TZ=Europe/Madrid
     volumes:
-      - /srv/almacen/mentat/logs:/var/log/mentat
+      - ${MENTAT_LOGDIR:-/srv/almacen/mentat/logs}:/var/log/mentat
     restart: unless-stopped
 
 secrets:

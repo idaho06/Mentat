@@ -14,4 +14,5 @@ htmlcov/
 !/secrets/README.md
 .env
 .env.*
+!.env.example
 *.secret
