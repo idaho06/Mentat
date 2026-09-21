@@ -155,6 +155,8 @@ class Mentat(irc.bot.SingleServerIRCBot):
         self.logger.pubmsg(event)
         if self.config.has_watched_nick(event.source.nick):
             self.logger.watched_pubmsg(event)
+        for nick in self._mentioned_watched_nicks(event.arguments[0], event.source.nick):
+            self.logger.watched_mention(event, nick)
         subject = event.arguments[0].split(":", 1)
         if len(subject) > 1 and irc.strings.lower(subject[0]) == irc.strings.lower(
             self.connection.get_nickname()

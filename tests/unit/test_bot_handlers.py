@@ -55,6 +55,35 @@ def test_pubmsg_from_a_non_watched_nick_does_not_touch_its_nick_file(bot, fake_c
     assert not os.path.exists(f"{tmp_config.logdir}/nick_tester.log")
 
 
+def test_pubmsg_mentioning_a_watched_nick_logs_a_mention(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "Peter", "#madrid", "hey Qetu, how are you?"))
+    with open(f"{tmp_config.logdir}/nick_Qetu.log", encoding="utf-8") as handle:
+        assert "Peter mentioned Qetu in #madrid" in handle.read()
+
+
+def test_pubmsg_self_mention_is_not_logged_as_a_mention(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "Qetu", "#madrid", "I am Qetu"))
+    with open(f"{tmp_config.logdir}/nick_Qetu.log", encoding="utf-8") as handle:
+        assert "mentioned" not in handle.read()
+
+
+def test_pubmsg_mentioning_a_non_watched_nick_touches_no_file(bot, fake_connection, make_event, tmp_config):
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "Peter", "#madrid", "hey Qetu"))
+    assert not os.path.exists(f"{tmp_config.logdir}/nick_Qetu.log")
+
+
+def test_pubmsg_mentioning_two_watched_nicks_logs_to_both_files(bot, fake_connection, make_event, tmp_config):
+    tmp_config.add_watched_nick("Qetu")
+    tmp_config.add_watched_nick("Shula")
+    bot.on_pubmsg(fake_connection, make_event("pubmsg", "Peter", "#madrid", "Qetu and Shula, hi!"))
+    with open(f"{tmp_config.logdir}/nick_Qetu.log", encoding="utf-8") as handle:
+        assert "Peter mentioned Qetu in #madrid" in handle.read()
+    with open(f"{tmp_config.logdir}/nick_Shula.log", encoding="utf-8") as handle:
+        assert "Peter mentioned Shula in #madrid" in handle.read()
+
+
 def test_join_and_part_from_a_watched_nick_also_log_to_its_nick_file(bot, fake_connection, make_event, tmp_config):
     tmp_config.add_watched_nick("bob")
     bot.on_join(fake_connection, make_event("join", "bob", "#mentat"))
