@@ -5,13 +5,16 @@
    TODO: more info
 """
 
-import io
-import sys
 import logging
-import argparse
 from datetime import datetime
 from irc.client import ServerConnection
 from mentat.config import Config
+from mentat.commands.common import (
+    BotArgumentParser,
+    parse_command_args,
+    reply_target,
+    send_lines,
+)
 
 def estado(connection: ServerConnection, event, args, config: Config):
     """Function to handle the estado command."""
@@ -22,58 +25,19 @@ def estado(connection: ServerConnection, event, args, config: Config):
         logging.debug("User is not admin")
         return
 
-    nick = event.source.nick
-    talk_to = None
-    if event.type == "privmsg":
-        talk_to = nick
-    else:
-        talk_to = event.target
+    talk_to = reply_target(event)
 
-    parser = argparse.ArgumentParser(
+    parser = BotArgumentParser(
         description="Estado command",
         prog="estado",
-        exit_on_error=False,
     )
 
-    # Redirect stdout to capture the help text
-    old_stdout = sys.stdout
-    sys.stdout = io.StringIO()
-
-    old_stderr = sys.stderr
-    sys.stderr = io.StringIO()
-
-    help_text = ""
-    estado_args = argparse.Namespace()
-    try:
-        estado_args = parser.parse_args(args)
-    except SystemExit:
-        # Get the help text
-        help_text = sys.stdout.getvalue()
-    except argparse.ArgumentError as exc:
-        # Get the help text
-        help_text = sys.stdout.getvalue()
-        # Add the error message to the help text
-        help_text += f"\n{exc}"
-    except argparse.ArgumentTypeError as exc:
-        # Get the help text
-        help_text = sys.stdout.getvalue()
-        # Add the error message to the help text
-        help_text += f"\n{exc}"
-    finally:
-        # Restore stdout
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-
-    if help_text != "":
-        logging.debug("Help text: %s", help_text)
-        for help_line in help_text.splitlines():
-            connection.privmsg(talk_to, help_line)
+    _estado_args, help_lines = parse_command_args(parser, args)
+    if _estado_args is None:
+        send_lines(connection, talk_to, help_lines)
         return
-    
+
     uptime = datetime.now() - config.start_time
     connection.privmsg(talk_to, f"Uptime: {uptime}")
     connection.privmsg(talk_to, f"Channels: {config.irc_channels}")
     connection.privmsg(talk_to, f"Admin users: {config.irc_admin_users}")
-    
-    return
-

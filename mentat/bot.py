@@ -1,9 +1,6 @@
 """Bot module for Mentat. This module contains the class for the bot."""
 
 import logging
-import sys
-import io
-import argparse
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ServerConnection
@@ -16,6 +13,12 @@ from mentat.commands.morir import morir
 from mentat.commands.join import join
 from mentat.commands.part import part
 from mentat.commands.estado import estado
+from mentat.commands.common import (
+    BotArgumentParser,
+    parse_command_args,
+    reply_target,
+    send_lines,
+)
 from mentat.config import Config
 from mentat.logger import Logger
 from mentat.status import Status
@@ -178,18 +181,13 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug(
             "Entering do_command function: e: %s, cmd: %s", event, cmd)
         nick = event.source.nick
-        talk_to = None
-        if event.type == "privmsg":
-            talk_to = nick
-        else:
-            talk_to = event.target
+        talk_to = reply_target(event)
 
         connection = self.connection
 
-        parser = argparse.ArgumentParser(
+        parser = BotArgumentParser(
             description="Mentat IRC bot",
             prog="Mentat:",
-            exit_on_error=False,
             epilog="Add --help after the command to get help about the command",
         )
 
@@ -201,77 +199,51 @@ class Mentat(irc.bot.SingleServerIRCBot):
 
         cmd_list = cmd.split()
 
-        # Redirect stdout to capture the help text
-        old_stdout = sys.stdout
-        sys.stdout = io.StringIO()
+        parsed, help_lines = parse_command_args(parser, cmd_list[:1])
+        if parsed is None:
+            send_lines(connection, talk_to, help_lines)
+            return
+        command = parsed.cmd
 
-        old_stderr = sys.stderr
-        sys.stderr = io.StringIO()
-
-        help_text = ""
-        command = ""
-        try:
-            command = parser.parse_args([cmd_list[0]]).cmd
-        except SystemExit:
-            # Get the help text
-            help_text = sys.stdout.getvalue()
-        except argparse.ArgumentError as exc:
-            # Get the help text
-            help_text = sys.stdout.getvalue()
-            # Add the error message to the help text
-            help_text += f"\n{exc}"
-        except Exception as exc:
-            logging.error("Exception: %s", exc)
-        finally:
-            help_text += sys.stderr.getvalue()
-            # Restore stdout
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
-
-        if help_text != "":
-            logging.debug("Help text: %s", help_text)
-            for help_line in help_text.splitlines():
-                connection.privmsg(talk_to, help_line)
-        else:
-            if command == "hola":
-                logging.debug("Command: hola")
-                hola(connection, event, cmd_list[1:])
-                # connection.privmsg(talk_to, "Hola, " + nick)
-            elif command == "login":
-                logging.debug("Command: login")
-                login(connection, event, cmd_list[1:], self.config)
-            elif command == "op":
-                if not self.config.is_admin(nick):
-                    return
-                logging.debug("Command: op")
-                if len(cmd_list) > 1 and len(cmd_list) < 4:
-                    nick_to_op = cmd_list[1]
-                    channel = ""
-                    try:
-                        channel = cmd_list[2]
-                    except IndexError:
-                        channel = talk_to
-                    logging.debug("Channel: %s, Nick to op: %s",
-                                  channel, nick_to_op)
-                    connection.mode(channel, f"+o {nick_to_op}")
-                elif len(cmd_list) == 1 and event.type != "privmsg":
-                    connection.mode(talk_to, f"+o {nick}")
-            elif command == "dados":
-                logging.debug("Command: dados")
-                dados(connection, event, cmd_list[1:])
-            elif command == "desconectar":
-                logging.debug("Command: desconectar")
-                desconectar(connection, event, cmd_list[1:], self.config)
-                self.status.transition("disconnect")
-            elif command == "morir":
-                logging.debug("Command: morir")
-                morir(connection, event, cmd_list[1:], self.config)
-            elif command == "join":
-                logging.debug("Command: join")
-                join(connection, event, cmd_list[1:], self.config)
-            elif command == "part":
-                logging.debug("Command: part")
-                part(connection, event, cmd_list[1:], self.config)
-            elif command == "estado":
-                logging.debug("Command: estado")
-                estado(connection, event, cmd_list[1:], self.config)
+        if command == "hola":
+            logging.debug("Command: hola")
+            hola(connection, event, cmd_list[1:])
+            # connection.privmsg(talk_to, "Hola, " + nick)
+        elif command == "login":
+            logging.debug("Command: login")
+            login(connection, event, cmd_list[1:], self.config)
+        elif command == "op":
+            if not self.config.is_admin(nick):
+                return
+            logging.debug("Command: op")
+            if len(cmd_list) > 1 and len(cmd_list) < 4:
+                nick_to_op = cmd_list[1]
+                channel = ""
+                try:
+                    channel = cmd_list[2]
+                except IndexError:
+                    channel = talk_to
+                logging.debug("Channel: %s, Nick to op: %s",
+                              channel, nick_to_op)
+                connection.mode(channel, f"+o {nick_to_op}")
+            elif len(cmd_list) == 1 and event.type != "privmsg":
+                connection.mode(talk_to, f"+o {nick}")
+        elif command == "dados":
+            logging.debug("Command: dados")
+            dados(connection, event, cmd_list[1:])
+        elif command == "desconectar":
+            logging.debug("Command: desconectar")
+            desconectar(connection, event, cmd_list[1:], self.config)
+            self.status.transition("disconnect")
+        elif command == "morir":
+            logging.debug("Command: morir")
+            morir(connection, event, cmd_list[1:], self.config)
+        elif command == "join":
+            logging.debug("Command: join")
+            join(connection, event, cmd_list[1:], self.config)
+        elif command == "part":
+            logging.debug("Command: part")
+            part(connection, event, cmd_list[1:], self.config)
+        elif command == "estado":
+            logging.debug("Command: estado")
+            estado(connection, event, cmd_list[1:], self.config)
