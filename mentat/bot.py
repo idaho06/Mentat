@@ -83,6 +83,18 @@ class Mentat(irc.bot.SingleServerIRCBot):
         #     c.join(channel)
         #     logging.info(f"Joining channel: {channel}")
 
+    def on_disconnect(self, connection: ServerConnection, event):
+        """Function to handle disconnections.
+
+        SingleServerIRCBot schedules a reconnect by itself, so the status
+        goes back to CONNECTING (not INIT) and Mentat.start is not called
+        again.
+        """
+        logging.debug(
+            "Entering on_disconnect function: c: %s, e: %s", connection, event)
+        logging.warning("Disconnected from server: %s", event.arguments)
+        self.status.transition("disconnect")
+
     def on_endofmotd(self, connection: ServerConnection, event):
         """Function to handle the end of MOTD."""
         logging.debug(
@@ -234,7 +246,6 @@ class Mentat(irc.bot.SingleServerIRCBot):
         elif command == "desconectar":
             logging.debug("Command: desconectar")
             desconectar(connection, event, cmd_list[1:], self.config)
-            self.status.transition("disconnect")
         elif command == "morir":
             logging.debug("Command: morir")
             morir(connection, event, cmd_list[1:], self.config)
