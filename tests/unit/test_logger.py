@@ -193,6 +193,12 @@ def test_watched_chghost(file_logger, tmp_config, make_event):
     assert read(tmp_config, "nick_bob.log") == ["*** bob changed host to newident@newhost"]
 
 
+def test_watched_mention(file_logger, tmp_config, make_event):
+    event = make_event("pubmsg", "Peter", "#madrid", "hey Qetu, how are you?")
+    file_logger.watched_mention(event, "Qetu")
+    assert read(tmp_config, "nick_Qetu.log") == ["@@@ Peter mentioned Qetu in #madrid"]
+
+
 def test_watched_connect(file_logger, tmp_config, make_event):
     event = make_event("600", "server", "Mentat", arguments=["bob", "u", "h", "123", "logged online"])
     file_logger.watched_connect(event)

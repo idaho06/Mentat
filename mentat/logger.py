@@ -226,6 +226,13 @@ class Logger:
         nick = event.arguments[0]
         self._append(f"nick_{nick}.log", f"<<< {nick} has disconnected")
 
+    def watched_mention(self, event, nick: str):
+        """Stores a mention of a watched nick by someone else, in its file."""
+        self._append(
+            f"nick_{nick}.log",
+            f"@@@ {event.source.nick} mentioned {nick} in {event.target}",
+        )
+
     def quit(self, event, channels):
         """Stores quit messages in every channel the nick was in."""
         logging.debug("Entering quit function: e: %s", event)
