@@ -11,22 +11,24 @@ from appdirs import user_config_dir, user_log_dir
 import irc.strings
 
 
-class Config(object):
+class Config:  # pylint: disable=too-many-instance-attributes
     """Class for the configuration of the bot."""
-    # ...
-    # IRC settings
-    irc_server = "proxy-irc.chathispano.com"
-    irc_port = 6667
-    irc_nick = "Mentat"
-    irc_realname = "Piter de Vries"
-    irc_ident = "mentat"
-    irc_password = ""
-    irc_channels = ["#mentat", "#malos"]
-    irc_admin_password = ""
-    irc_admin_users = set()
 
     def __init__(self, args: argparse.Namespace):
         logging.debug("Entering Config class")
+        # IRC settings (defaults; overridden by the config file and the
+        # command line). Instance attributes, so two Config objects never
+        # share the same channel list or admin set.
+        self.irc_server = "proxy-irc.chathispano.com"
+        self.irc_port = 6667
+        self.irc_nick = "Mentat"
+        self.irc_realname = "Piter de Vries"
+        self.irc_ident = "mentat"
+        self.irc_password = ""
+        self.irc_channels = ["#mentat", "#malos"]
+        self.irc_admin_password = ""
+        self.irc_admin_users = set()
+
         self.configdir = user_config_dir("mentat")
         self.logdir = user_log_dir("mentat")
         self.start_time = datetime.now()
@@ -65,19 +67,12 @@ class Config(object):
     def set_admin(self, admin: str):
         """Adds an admin to the admin list."""
         logging.debug("Entering set_admin function. Admin: %s", admin)
-        # admin to lower case
-        admin_lower = irc.strings.lower(admin)
-        self.irc_admin_users.add(admin_lower)
+        self.irc_admin_users.add(irc.strings.lower(admin))
 
     def is_admin(self, admin: str) -> bool:
         """Checks if a user is admin."""
         logging.debug("Entering is_admin function. Admin: %s", admin)
-        # admin to lower case
-        admin_lower = irc.strings.lower(admin)
-        if admin_lower in self.irc_admin_users:
-            return True
-        else:
-            return False
+        return irc.strings.lower(admin) in self.irc_admin_users
 
     def has_channel(self, channel: str) -> bool:
         """Checks if a channel is in the channel list (case-insensitive)."""
