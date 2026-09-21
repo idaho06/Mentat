@@ -48,4 +48,4 @@ def part(connection: ServerConnection, event, args, config: Config):
         return
 
     connection.part(part_args.channel, part_args.reason)
-    config.irc_channels.remove(part_args.channel)
+    config.remove_channel(part_args.channel)

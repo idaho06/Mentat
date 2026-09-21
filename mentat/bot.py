@@ -168,13 +168,14 @@ class Mentat(irc.bot.SingleServerIRCBot):
         logging.debug("Entering on_kick function: c: %s, e: %s",
                       connection, event)
         self.logger.kick(event)
-        # check if the bot was kicked
-        if event.arguments[0] == self.config.irc_nick:
+        # check if the bot was kicked (compare with the nick we actually
+        # got, which may differ from the configured one, e.g. "Mentat_")
+        if event.arguments[0] == connection.get_nickname():
             # connection.join(event.target)
             # TODO: add an auto-rejoin feature to the config.
 
             # remove the channel from the list of channels
-            self.config.irc_channels.remove(event.target)
+            self.config.remove_channel(event.target)
 
     def on_nick(self, connection: ServerConnection, event):
         """Function to handle nick changes."""

@@ -73,6 +73,29 @@ class Config(object):
         else:
             return False
 
+    def has_channel(self, channel: str) -> bool:
+        """Checks if a channel is in the channel list (case-insensitive)."""
+        wanted = irc.strings.lower(channel)
+        return any(irc.strings.lower(c) == wanted for c in self.irc_channels)
+
+    def add_channel(self, channel: str):
+        """Adds a channel to the channel list, unless it is already there."""
+        logging.debug("Entering add_channel function. Channel: %s", channel)
+        if not self.has_channel(channel):
+            self.irc_channels.append(channel)
+
+    def remove_channel(self, channel: str):
+        """Removes a channel from the channel list; no-op if it is not there.
+
+        IRC channel names are case-insensitive and the server may echo them
+        with a different case than the one we configured.
+        """
+        logging.debug("Entering remove_channel function. Channel: %s", channel)
+        unwanted = irc.strings.lower(channel)
+        self.irc_channels = [
+            c for c in self.irc_channels if irc.strings.lower(c) != unwanted
+        ]
+
     def create_configfile(self, configfile: str):
         """Creates the configuration file."""
         logging.debug(
