@@ -5,13 +5,18 @@ Set ``MENTAT_TEST_IRC=host:port`` to run it; otherwise every test marked
 the root conftest.
 """
 
+import itertools
 import os
 import socket
 import time
 
 import pytest
 
+from tests.helpers.ircclient import RawIRCClient
+
 ENV_VAR = "MENTAT_TEST_IRC"
+TEST_NICKS = ["Mentat", "Mentat_", "idaho", "tester"]
+_probe_ids = itertools.count(1)
 
 
 def pytest_collection_modifyitems(config, items):  # pylint: disable=unused-argument
@@ -39,7 +44,32 @@ def real_server_address():
             time.sleep(0.5)
 
 
+def wait_until_nicks_are_free(address, nicks, timeout=15.0):
+    """Block until none of ``nicks`` is online, asking the server with ISON.
+
+    A real server may keep the previous test's users registered for a
+    moment after their QUIT (ngircd delays reading from a connection while
+    a command penalty is pending), which would give the next bot a 433.
+    """
+    probe = RawIRCClient(*address)
+    try:
+        probe.register(f"probe{next(_probe_ids)}")
+        deadline = time.monotonic() + timeout
+        while True:
+            probe.send_raw("ISON " + " ".join(nicks))
+            reply = probe.wait_for(lambda line: " 303 " in line)
+            online = reply.split(" :", 1)[1].split() if " :" in reply else []
+            if not online:
+                return
+            if time.monotonic() > deadline:
+                pytest.fail(f"nicks still online after {timeout}s: {online}")
+            time.sleep(0.2)
+    finally:
+        probe.quit()
+
+
 @pytest.fixture
 def bot_config(tmp_config, real_server_address):
+    wait_until_nicks_are_free(real_server_address, TEST_NICKS)
     tmp_config.irc_server, tmp_config.irc_port = real_server_address
     return tmp_config
