@@ -171,7 +171,7 @@ class Mentat(irc.bot.SingleServerIRCBot):
         """Function to handle user modes."""
         logging.debug("Entering on_umode function: c: %s, e: %s",
                       connection, event)
-        self.logger.mode(event)
+        self.logger.umode(event)
 
     def do_command(self, event, cmd: str):
         """Function to handle commands."""

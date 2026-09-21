@@ -117,6 +117,17 @@ class Logger(object):
         with open(filename, "a", encoding="utf-8", errors="replace") as f:
             f.write(f"{time} *** {nick} is now known as {nick_target}\n")
     
+    def umode(self, event):
+        """Stores self (user) mode changes."""
+        logging.debug("Entering umode function: e: %s", event)
+        nick = event.source.nick if event.source else "unknown"
+        action = event.arguments[0] if event.arguments else ""
+        logging.info("User: %s | Mode: %s", nick, action)
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        filename = f"{self.config.logdir}/mode_changes.log"
+        with open(filename, "a", encoding="utf-8", errors="replace") as f:
+            f.write(f"{time} *** {nick} sets mode: {action}\n")
+
     def mode(self, event):
         """Stores mode changes."""
         logging.debug("Entering mode function: e: %s", event)
